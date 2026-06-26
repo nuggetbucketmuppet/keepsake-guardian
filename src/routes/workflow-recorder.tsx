@@ -76,16 +76,28 @@ function SectionCard({ n, title, children }: { n: number; title: string; childre
 }
 
 function WorkflowRecorder() {
+  const [tab, setTab] = useState("record");
+  const [editing, setEditing] = useState<Workflow | null>(null);
+
+  const startEdit = (wf: Workflow) => {
+    setEditing(wf);
+    setTab("record");
+  };
+  const onSaved = () => {
+    setEditing(null);
+    setTab("list");
+  };
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
       <PageHeader
         title="Record an AI Workflow"
         subtitle="Document what your AI agents are doing so your team can take over when needed."
       />
-      <Tabs.Root defaultValue="record">
+      <Tabs.Root value={tab} onValueChange={(v) => { setTab(v); if (v === "record") return; setEditing(null); }}>
         <Tabs.List className="mb-6 inline-flex gap-1 rounded-md border border-border bg-card p-1">
           {[
-            { v: "record", label: "Record New Workflow" },
+            { v: "record", label: editing ? "Edit Workflow" : "Record New Workflow" },
             { v: "list", label: "Recorded Workflows" },
           ].map((t) => (
             <Tabs.Trigger
@@ -98,39 +110,45 @@ function WorkflowRecorder() {
           ))}
         </Tabs.List>
         <Tabs.Content value="record">
-          <RecordForm />
+          <RecordForm key={editing?.id ?? "new"} initial={editing} onSaved={onSaved} />
         </Tabs.Content>
         <Tabs.Content value="list">
-          <RecordedTable />
+          <RecordedTable onEdit={startEdit} />
         </Tabs.Content>
       </Tabs.Root>
     </div>
   );
 }
 
-function RecordForm() {
-  const [name, setName] = useState("");
-  const [department, setDepartment] = useState<Department>("Finance");
-  const [aiTool, setAiTool] = useState("");
-  const [frequency, setFrequency] = useState<Frequency>("Monthly");
-  const [classification, setClassification] = useState<Classification>("Internal");
-  const [taskDescription, setTaskDescription] = useState("");
-  const [expectedOutput, setExpectedOutput] = useState("");
-  const [systems, setSystems] = useState<SystemTouched[]>([
-    { systemName: "NetSuite ERP", action: "Write", dataType: "Invoice records" },
-  ]);
-  const [decisions, setDecisions] = useState<DecisionNode[]>([
-    { decisionPoint: "", options: "", chosen: "", reason: "" },
-  ]);
-  const [data, setData] = useState<DataUsed[]>([{ source: "", type: "Operational", volume: "" }]);
-  const [approvalsSkipped, setApprovalsSkipped] = useState(false);
-  const [skippedWhich, setSkippedWhich] = useState("");
-  const [skippedReason, setSkippedReason] = useState("");
-  const [skippedRisk, setSkippedRisk] = useState<Severity>("medium");
+function RecordForm({ initial, onSaved }: { initial?: Workflow | null; onSaved?: () => void }) {
+  const [name, setName] = useState(initial?.name ?? "");
+  const [department, setDepartment] = useState<Department>(initial?.department ?? "Finance");
+  const [aiTool, setAiTool] = useState(initial?.aiTool ?? "");
+  const [frequency, setFrequency] = useState<Frequency>(initial?.frequency ?? "Monthly");
+  const [classification, setClassification] = useState<Classification>(initial?.classification ?? "Internal");
+  const [taskDescription, setTaskDescription] = useState(initial?.taskDescription ?? "");
+  const [expectedOutput, setExpectedOutput] = useState(initial?.expectedOutput ?? "");
+  const [systems, setSystems] = useState<SystemTouched[]>(
+    initial?.systems?.length ? initial.systems : [{ systemName: "NetSuite ERP", action: "Write", dataType: "Invoice records" }],
+  );
+  const [decisions, setDecisions] = useState<DecisionNode[]>(
+    initial?.decisions?.length ? initial.decisions : [{ decisionPoint: "", options: "", chosen: "", reason: "" }],
+  );
+  const [data, setData] = useState<DataUsed[]>(
+    initial?.data?.length ? initial.data : [{ source: "", type: "Operational", volume: "" }],
+  );
+  const [code, setCode] = useState(initial?.code ?? "");
+  const [codeLanguage, setCodeLanguage] = useState(initial?.codeLanguage ?? "pseudocode");
+  const [approvalsSkipped, setApprovalsSkipped] = useState(initial?.approvalsSkipped ?? false);
+  const [skippedWhich, setSkippedWhich] = useState(initial?.skippedWhich ?? "");
+  const [skippedReason, setSkippedReason] = useState(initial?.skippedReason ?? "");
+  const [skippedRisk, setSkippedRisk] = useState<Severity>(initial?.skippedRisk ?? "medium");
+
+  const isEditing = !!initial;
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
-  const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [result, setResult] = useState<AnalysisResult | null>(initial?.analysis ?? null);
   const [errMsg, setErrMsg] = useState("");
 
   const validate = () => {
@@ -143,27 +161,34 @@ function RecordForm() {
     return Object.keys(e).length === 0;
   };
 
-  const buildWorkflow = (analysis?: AnalysisResult): Workflow => ({
-    id: uid(),
-    name,
-    department,
-    aiTool,
-    frequency,
-    classification,
-    taskDescription,
-    expectedOutput,
-    systems: systems.filter((s) => s.systemName.trim()),
-    decisions: decisions.filter((d) => d.decisionPoint.trim()),
-    data: data.filter((d) => d.source.trim()),
-    approvalsSkipped,
-    skippedWhich,
-    skippedReason,
-    skippedRisk,
-    resilienceScore: analysis?.resilience_score ?? 50,
-    analysis,
-    lastUpdated: new Date().toISOString(),
-    lastHumanTouch: new Date().toISOString(),
-  });
+  const buildWorkflow = (analysis?: AnalysisResult): Workflow => {
+    const now = new Date().toISOString();
+    return {
+      id: initial?.id ?? uid(),
+      name,
+      department,
+      aiTool,
+      frequency,
+      classification,
+      taskDescription,
+      expectedOutput,
+      systems: systems.filter((s) => s.systemName.trim()),
+      decisions: decisions.filter((d) => d.decisionPoint.trim()),
+      data: data.filter((d) => d.source.trim()),
+      code: code.trim() || undefined,
+      codeLanguage: code.trim() ? codeLanguage : undefined,
+      approvalsSkipped,
+      skippedWhich,
+      skippedReason,
+      skippedRisk,
+      resilienceScore: analysis?.resilience_score ?? initial?.resilienceScore ?? 50,
+      analysis,
+      hasGuide: initial?.hasGuide,
+      lastUpdated: now,
+      lastEdited: isEditing ? now : undefined,
+      lastHumanTouch: now,
+    };
+  };
 
   const submit = async () => {
     if (!validate()) {
@@ -178,7 +203,8 @@ function RecordForm() {
       saveWorkflow(wf);
       setResult(analysis);
       setStatus("done");
-      toast.success("Workflow saved and analysed.");
+      toast.success(isEditing ? "Workflow updated and re-analysed." : "Workflow saved and analysed.");
+      onSaved?.();
     } catch (err) {
       setErrMsg(err instanceof Error ? err.message : "Analysis failed.");
       setStatus("error");
