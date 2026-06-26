@@ -1,0 +1,117 @@
+import { useState, type ReactNode } from "react";
+import { Link, useRouterState } from "@tanstack/react-router";
+import {
+  Home,
+  Activity,
+  BookOpen,
+  GitFork,
+  Zap,
+  Clock,
+  Settings,
+  Menu,
+  X,
+  LogOut,
+  ShieldCheck,
+} from "lucide-react";
+
+const NAV = [
+  { to: "/", label: "Dashboard", icon: Home },
+  { to: "/workflow-recorder", label: "Workflow Recorder", icon: Activity },
+  { to: "/fallback-guides", label: "Fallback Guides", icon: BookOpen },
+  { to: "/dependency-map", label: "Dependency Map", icon: GitFork },
+  { to: "/failure-drills", label: "Failure Drills", icon: Zap },
+  { to: "/knowledge-decay", label: "Knowledge Decay", icon: Clock },
+  { to: "/settings", label: "Settings", icon: Settings },
+] as const;
+
+export function AppLayout({ children }: { children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  return (
+    <div className="flex min-h-screen w-full bg-background text-foreground">
+      {/* Sidebar */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-border bg-sidebar transition-transform duration-300 lg:translate-x-0 ${
+          open ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex items-center gap-2.5 px-5 py-5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/15 ring-1 ring-primary/40">
+            <ShieldCheck className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <div className="font-display text-lg font-extrabold leading-none tracking-tight">KeepSake</div>
+            <div className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+              Resilience OS
+            </div>
+          </div>
+        </div>
+
+        <nav className="flex-1 space-y-1 px-3 py-2">
+          {NAV.map((item) => {
+            const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                onClick={() => setOpen(false)}
+                className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
+                  active
+                    ? "bg-primary/15 text-foreground ring-1 ring-primary/40"
+                    : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
+                }`}
+              >
+                <Icon className={`h-[18px] w-[18px] ${active ? "text-primary" : ""}`} />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="border-t border-border p-3">
+          <div className="flex items-center gap-3 rounded-md px-2 py-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-accent/20 text-sm font-bold text-accent ring-1 ring-accent/40">
+              AC
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-semibold">Acme Corp</div>
+              <div className="truncate text-xs text-muted-foreground">alex.chen@acme.com</div>
+            </div>
+            <button
+              aria-label="Log out"
+              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-danger"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* Backdrop on mobile */}
+      {open && (
+        <div
+          className="fixed inset-0 z-30 bg-black/60 lg:hidden"
+          onClick={() => setOpen(false)}
+          aria-hidden
+        />
+      )}
+
+      {/* Main */}
+      <div className="flex min-w-0 flex-1 flex-col lg:pl-64">
+        <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur lg:hidden">
+          <button
+            aria-label="Open navigation"
+            onClick={() => setOpen(true)}
+            className="rounded-md p-2 text-muted-foreground hover:bg-secondary hover:text-foreground"
+          >
+            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+          <span className="font-display font-bold">KeepSake</span>
+        </header>
+        <main className="min-w-0 flex-1">{children}</main>
+      </div>
+    </div>
+  );
+}

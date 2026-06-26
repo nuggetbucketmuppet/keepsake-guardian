@@ -9,38 +9,175 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WorkflowRecorderRouteImport } from './routes/workflow-recorder'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as KnowledgeDecayRouteImport } from './routes/knowledge-decay'
+import { Route as FallbackGuidesRouteImport } from './routes/fallback-guides'
+import { Route as FailureDrillsRouteImport } from './routes/failure-drills'
+import { Route as DependencyMapRouteImport } from './routes/dependency-map'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiClaudeRouteImport } from './routes/api/claude'
 
+const WorkflowRecorderRoute = WorkflowRecorderRouteImport.update({
+  id: '/workflow-recorder',
+  path: '/workflow-recorder',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KnowledgeDecayRoute = KnowledgeDecayRouteImport.update({
+  id: '/knowledge-decay',
+  path: '/knowledge-decay',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FallbackGuidesRoute = FallbackGuidesRouteImport.update({
+  id: '/fallback-guides',
+  path: '/fallback-guides',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FailureDrillsRoute = FailureDrillsRouteImport.update({
+  id: '/failure-drills',
+  path: '/failure-drills',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DependencyMapRoute = DependencyMapRouteImport.update({
+  id: '/dependency-map',
+  path: '/dependency-map',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiClaudeRoute = ApiClaudeRouteImport.update({
+  id: '/api/claude',
+  path: '/api/claude',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dependency-map': typeof DependencyMapRoute
+  '/failure-drills': typeof FailureDrillsRoute
+  '/fallback-guides': typeof FallbackGuidesRoute
+  '/knowledge-decay': typeof KnowledgeDecayRoute
+  '/settings': typeof SettingsRoute
+  '/workflow-recorder': typeof WorkflowRecorderRoute
+  '/api/claude': typeof ApiClaudeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dependency-map': typeof DependencyMapRoute
+  '/failure-drills': typeof FailureDrillsRoute
+  '/fallback-guides': typeof FallbackGuidesRoute
+  '/knowledge-decay': typeof KnowledgeDecayRoute
+  '/settings': typeof SettingsRoute
+  '/workflow-recorder': typeof WorkflowRecorderRoute
+  '/api/claude': typeof ApiClaudeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dependency-map': typeof DependencyMapRoute
+  '/failure-drills': typeof FailureDrillsRoute
+  '/fallback-guides': typeof FallbackGuidesRoute
+  '/knowledge-decay': typeof KnowledgeDecayRoute
+  '/settings': typeof SettingsRoute
+  '/workflow-recorder': typeof WorkflowRecorderRoute
+  '/api/claude': typeof ApiClaudeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/dependency-map'
+    | '/failure-drills'
+    | '/fallback-guides'
+    | '/knowledge-decay'
+    | '/settings'
+    | '/workflow-recorder'
+    | '/api/claude'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/dependency-map'
+    | '/failure-drills'
+    | '/fallback-guides'
+    | '/knowledge-decay'
+    | '/settings'
+    | '/workflow-recorder'
+    | '/api/claude'
+  id:
+    | '__root__'
+    | '/'
+    | '/dependency-map'
+    | '/failure-drills'
+    | '/fallback-guides'
+    | '/knowledge-decay'
+    | '/settings'
+    | '/workflow-recorder'
+    | '/api/claude'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DependencyMapRoute: typeof DependencyMapRoute
+  FailureDrillsRoute: typeof FailureDrillsRoute
+  FallbackGuidesRoute: typeof FallbackGuidesRoute
+  KnowledgeDecayRoute: typeof KnowledgeDecayRoute
+  SettingsRoute: typeof SettingsRoute
+  WorkflowRecorderRoute: typeof WorkflowRecorderRoute
+  ApiClaudeRoute: typeof ApiClaudeRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/workflow-recorder': {
+      id: '/workflow-recorder'
+      path: '/workflow-recorder'
+      fullPath: '/workflow-recorder'
+      preLoaderRoute: typeof WorkflowRecorderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/knowledge-decay': {
+      id: '/knowledge-decay'
+      path: '/knowledge-decay'
+      fullPath: '/knowledge-decay'
+      preLoaderRoute: typeof KnowledgeDecayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/fallback-guides': {
+      id: '/fallback-guides'
+      path: '/fallback-guides'
+      fullPath: '/fallback-guides'
+      preLoaderRoute: typeof FallbackGuidesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/failure-drills': {
+      id: '/failure-drills'
+      path: '/failure-drills'
+      fullPath: '/failure-drills'
+      preLoaderRoute: typeof FailureDrillsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dependency-map': {
+      id: '/dependency-map'
+      path: '/dependency-map'
+      fullPath: '/dependency-map'
+      preLoaderRoute: typeof DependencyMapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +185,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/claude': {
+      id: '/api/claude'
+      path: '/api/claude'
+      fullPath: '/api/claude'
+      preLoaderRoute: typeof ApiClaudeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DependencyMapRoute: DependencyMapRoute,
+  FailureDrillsRoute: FailureDrillsRoute,
+  FallbackGuidesRoute: FallbackGuidesRoute,
+  KnowledgeDecayRoute: KnowledgeDecayRoute,
+  SettingsRoute: SettingsRoute,
+  WorkflowRecorderRoute: WorkflowRecorderRoute,
+  ApiClaudeRoute: ApiClaudeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
