@@ -37,13 +37,29 @@ function subscribe(l: Listener) {
   return () => listeners.delete(l);
 }
 
+// Cache parsed snapshots per key so getSnapshot returns a stable reference
+// until the underlying raw string actually changes. Without this,
+// useSyncExternalStore sees a new object every render and loops forever.
+const snapshotCache = new Map<string, { raw: string | null; value: unknown }>();
+
+function getSnapshot<T>(key: string, fallback: T): T {
+  const raw = typeof window === "undefined" ? null : localStorage.getItem(key);
+  const cached = snapshotCache.get(key);
+  if (cached && cached.raw === raw) return cached.value as T;
+  let value: T;
+  try {
+    value = raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    value = fallback;
+  }
+  snapshotCache.set(key, { raw, value });
+  return value;
+}
+
 function useStore<T>(key: string, fallback: T): T {
   return useSyncExternalStore(
     subscribe,
-    () => {
-      const raw = localStorage.getItem(key);
-      return raw ? (JSON.parse(raw) as T) : fallback;
-    },
+    () => getSnapshot<T>(key, fallback),
     () => fallback,
   );
 }
