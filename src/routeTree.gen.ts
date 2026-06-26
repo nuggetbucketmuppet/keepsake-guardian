@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorkflowRecorderRouteImport } from './routes/workflow-recorder'
+import { Route as KnowledgeDecayRouteImport } from './routes/knowledge-decay'
 import { Route as FallbackGuidesRouteImport } from './routes/fallback-guides'
 import { Route as FailureDrillsRouteImport } from './routes/failure-drills'
 import { Route as DependencyMapRouteImport } from './routes/dependency-map'
@@ -19,6 +20,11 @@ import { Route as ApiClaudeRouteImport } from './routes/api/claude'
 const WorkflowRecorderRoute = WorkflowRecorderRouteImport.update({
   id: '/workflow-recorder',
   path: '/workflow-recorder',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KnowledgeDecayRoute = KnowledgeDecayRouteImport.update({
+  id: '/knowledge-decay',
+  path: '/knowledge-decay',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FallbackGuidesRoute = FallbackGuidesRouteImport.update({
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/dependency-map': typeof DependencyMapRoute
   '/failure-drills': typeof FailureDrillsRoute
   '/fallback-guides': typeof FallbackGuidesRoute
+  '/knowledge-decay': typeof KnowledgeDecayRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
   '/api/claude': typeof ApiClaudeRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/dependency-map': typeof DependencyMapRoute
   '/failure-drills': typeof FailureDrillsRoute
   '/fallback-guides': typeof FallbackGuidesRoute
+  '/knowledge-decay': typeof KnowledgeDecayRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
   '/api/claude': typeof ApiClaudeRoute
 }
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   '/dependency-map': typeof DependencyMapRoute
   '/failure-drills': typeof FailureDrillsRoute
   '/fallback-guides': typeof FallbackGuidesRoute
+  '/knowledge-decay': typeof KnowledgeDecayRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
   '/api/claude': typeof ApiClaudeRoute
 }
@@ -79,6 +88,7 @@ export interface FileRouteTypes {
     | '/dependency-map'
     | '/failure-drills'
     | '/fallback-guides'
+    | '/knowledge-decay'
     | '/workflow-recorder'
     | '/api/claude'
   fileRoutesByTo: FileRoutesByTo
@@ -87,6 +97,7 @@ export interface FileRouteTypes {
     | '/dependency-map'
     | '/failure-drills'
     | '/fallback-guides'
+    | '/knowledge-decay'
     | '/workflow-recorder'
     | '/api/claude'
   id:
@@ -95,6 +106,7 @@ export interface FileRouteTypes {
     | '/dependency-map'
     | '/failure-drills'
     | '/fallback-guides'
+    | '/knowledge-decay'
     | '/workflow-recorder'
     | '/api/claude'
   fileRoutesById: FileRoutesById
@@ -104,6 +116,7 @@ export interface RootRouteChildren {
   DependencyMapRoute: typeof DependencyMapRoute
   FailureDrillsRoute: typeof FailureDrillsRoute
   FallbackGuidesRoute: typeof FallbackGuidesRoute
+  KnowledgeDecayRoute: typeof KnowledgeDecayRoute
   WorkflowRecorderRoute: typeof WorkflowRecorderRoute
   ApiClaudeRoute: typeof ApiClaudeRoute
 }
@@ -115,6 +128,13 @@ declare module '@tanstack/react-router' {
       path: '/workflow-recorder'
       fullPath: '/workflow-recorder'
       preLoaderRoute: typeof WorkflowRecorderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/knowledge-decay': {
+      id: '/knowledge-decay'
+      path: '/knowledge-decay'
+      fullPath: '/knowledge-decay'
+      preLoaderRoute: typeof KnowledgeDecayRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/fallback-guides': {
@@ -160,6 +180,7 @@ const rootRouteChildren: RootRouteChildren = {
   DependencyMapRoute: DependencyMapRoute,
   FailureDrillsRoute: FailureDrillsRoute,
   FallbackGuidesRoute: FallbackGuidesRoute,
+  KnowledgeDecayRoute: KnowledgeDecayRoute,
   WorkflowRecorderRoute: WorkflowRecorderRoute,
   ApiClaudeRoute: ApiClaudeRoute,
 }
