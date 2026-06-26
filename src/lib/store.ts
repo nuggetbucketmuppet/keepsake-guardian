@@ -66,11 +66,7 @@ function useStore<T>(key: string, fallback: T): T {
 
 // ---- Workflows ----
 export function useWorkflows(): Workflow[] {
-  const data = useStore<Workflow[] | null>(KEYS.workflows, null);
-  useEffect(() => {
-    if (data === null) read(KEYS.workflows, seedWorkflows), emit();
-  }, [data]);
-  return data ?? (typeof window !== "undefined" ? read(KEYS.workflows, seedWorkflows) : seedWorkflows);
+  return useStore<Workflow[]>(KEYS.workflows, seedWorkflows);
 }
 export function saveWorkflow(wf: Workflow) {
   const list = read<Workflow[]>(KEYS.workflows, seedWorkflows);
