@@ -77,15 +77,17 @@ function Dashboard() {
       text: `Drill "${d.name}" completed — grade ${d.grade} (${d.readinessScore}%)`,
       time: d.dateRun,
     })),
-    ...workflows
-      .filter((w) => differenceInDays(new Date(), new Date(w.lastHumanTouch)) >= 30)
-      .slice(0, 3)
-      .map((w) => ({
-        icon: AlertTriangle,
-        color: "#ef4444",
-        text: `Knowledge decay alert: "${w.name}" untouched ${differenceInDays(new Date(), new Date(w.lastHumanTouch))} days`,
-        time: w.lastUpdated,
-      })),
+    ...(mounted
+      ? workflows
+          .filter((w) => differenceInDays(new Date(), new Date(w.lastHumanTouch)) >= 30)
+          .slice(0, 3)
+          .map((w) => ({
+            icon: AlertTriangle,
+            color: "#ef4444",
+            text: `Knowledge decay alert: "${w.name}" untouched ${differenceInDays(new Date(), new Date(w.lastHumanTouch))} days`,
+            time: w.lastUpdated,
+          }))
+      : []),
   ].sort((a, b) => +new Date(b.time) - +new Date(a.time));
 
   const quickActions = [
