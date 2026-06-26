@@ -13,6 +13,7 @@ import {
   Zap,
   ArrowRight,
   Radio,
+  Code2,
 } from "lucide-react";
 import { PulseRing } from "@/components/PulseRing";
 import { Card, PageHeader, StatCard } from "@/components/ui-kit";
@@ -94,6 +95,7 @@ function Dashboard() {
     { to: "/workflow-recorder", icon: Activity, title: "Record a Workflow", desc: "Document what your AI agents do.", glow: "primary" as const },
     { to: "/failure-drills", icon: Zap, title: "Run a Failure Drill", desc: "Test your team's offline readiness.", glow: "accent" as const },
     { to: "/knowledge-decay", icon: Clock, title: "View Decay Alerts", desc: "Spot workflows losing human touch.", glow: "primary" as const },
+    { to: "/system-processes", icon: Code2, title: "Add System Process Code", desc: "Document the code & pseudocode behind processes.", glow: "accent" as const },
   ];
 
   return (

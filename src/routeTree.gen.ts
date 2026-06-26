@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorkflowRecorderRouteImport } from './routes/workflow-recorder'
+import { Route as SystemProcessesRouteImport } from './routes/system-processes'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as KnowledgeDecayRouteImport } from './routes/knowledge-decay'
 import { Route as FallbackGuidesRouteImport } from './routes/fallback-guides'
@@ -21,6 +22,11 @@ import { Route as ApiClaudeRouteImport } from './routes/api/claude'
 const WorkflowRecorderRoute = WorkflowRecorderRouteImport.update({
   id: '/workflow-recorder',
   path: '/workflow-recorder',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SystemProcessesRoute = SystemProcessesRouteImport.update({
+  id: '/system-processes',
+  path: '/system-processes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/fallback-guides': typeof FallbackGuidesRoute
   '/knowledge-decay': typeof KnowledgeDecayRoute
   '/settings': typeof SettingsRoute
+  '/system-processes': typeof SystemProcessesRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
   '/api/claude': typeof ApiClaudeRoute
 }
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/fallback-guides': typeof FallbackGuidesRoute
   '/knowledge-decay': typeof KnowledgeDecayRoute
   '/settings': typeof SettingsRoute
+  '/system-processes': typeof SystemProcessesRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
   '/api/claude': typeof ApiClaudeRoute
 }
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/fallback-guides': typeof FallbackGuidesRoute
   '/knowledge-decay': typeof KnowledgeDecayRoute
   '/settings': typeof SettingsRoute
+  '/system-processes': typeof SystemProcessesRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
   '/api/claude': typeof ApiClaudeRoute
 }
@@ -99,6 +108,7 @@ export interface FileRouteTypes {
     | '/fallback-guides'
     | '/knowledge-decay'
     | '/settings'
+    | '/system-processes'
     | '/workflow-recorder'
     | '/api/claude'
   fileRoutesByTo: FileRoutesByTo
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/fallback-guides'
     | '/knowledge-decay'
     | '/settings'
+    | '/system-processes'
     | '/workflow-recorder'
     | '/api/claude'
   id:
@@ -119,6 +130,7 @@ export interface FileRouteTypes {
     | '/fallback-guides'
     | '/knowledge-decay'
     | '/settings'
+    | '/system-processes'
     | '/workflow-recorder'
     | '/api/claude'
   fileRoutesById: FileRoutesById
@@ -130,6 +142,7 @@ export interface RootRouteChildren {
   FallbackGuidesRoute: typeof FallbackGuidesRoute
   KnowledgeDecayRoute: typeof KnowledgeDecayRoute
   SettingsRoute: typeof SettingsRoute
+  SystemProcessesRoute: typeof SystemProcessesRoute
   WorkflowRecorderRoute: typeof WorkflowRecorderRoute
   ApiClaudeRoute: typeof ApiClaudeRoute
 }
@@ -141,6 +154,13 @@ declare module '@tanstack/react-router' {
       path: '/workflow-recorder'
       fullPath: '/workflow-recorder'
       preLoaderRoute: typeof WorkflowRecorderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/system-processes': {
+      id: '/system-processes'
+      path: '/system-processes'
+      fullPath: '/system-processes'
+      preLoaderRoute: typeof SystemProcessesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -202,6 +222,7 @@ const rootRouteChildren: RootRouteChildren = {
   FallbackGuidesRoute: FallbackGuidesRoute,
   KnowledgeDecayRoute: KnowledgeDecayRoute,
   SettingsRoute: SettingsRoute,
+  SystemProcessesRoute: SystemProcessesRoute,
   WorkflowRecorderRoute: WorkflowRecorderRoute,
   ApiClaudeRoute: ApiClaudeRoute,
 }
