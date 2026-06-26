@@ -162,3 +162,8 @@
   50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--danger) 0%, transparent); }
 }
 .animate-danger-pulse { animation: danger-pulse 1.6s ease-in-out infinite; }
+
+@keyframes pulse-border {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 45%, transparent); }
+  50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--danger) 0%, transparent); }
+}
