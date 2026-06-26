@@ -43,6 +43,14 @@ const NAV = [
 ] as const;
 
 export function AppLayout({ children }: { children: ReactNode }) {
+  return (
+    <OnboardingProvider>
+      <AppLayoutInner>{children}</AppLayoutInner>
+    </OnboardingProvider>
+  );
+}
+
+function AppLayoutInner({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
