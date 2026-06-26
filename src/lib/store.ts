@@ -110,8 +110,7 @@ export function updateGuide(id: string, patch: Partial<FallbackGuide>) {
 
 // ---- Drills ----
 export function useDrills(): DrillRecord[] {
-  const data = useStore<DrillRecord[] | null>(KEYS.drills, null);
-  return data ?? (typeof window !== "undefined" ? read(KEYS.drills, seedDrills) : seedDrills);
+  return useStore<DrillRecord[]>(KEYS.drills, seedDrills);
 }
 export function saveDrill(d: DrillRecord) {
   const list = read<DrillRecord[]>(KEYS.drills, seedDrills);
