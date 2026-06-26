@@ -128,6 +128,7 @@ const seedEdges: Edge[] = [
 ];
 
 function DependencyMap() {
+  const navigate = useNavigate();
   const [dept, setDept] = useState("All");
   const [highOnly, setHighOnly] = useState(false);
   const [restrictedOnly, setRestrictedOnly] = useState(false);
