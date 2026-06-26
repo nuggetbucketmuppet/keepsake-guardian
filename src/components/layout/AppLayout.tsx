@@ -14,7 +14,22 @@ import {
   LogOut,
   ShieldCheck,
   Code2,
+  HelpCircle,
 } from "lucide-react";
+import { OnboardingProvider, useOnboarding } from "@/components/Onboarding";
+
+function HowThisWorksButton() {
+  const { open } = useOnboarding();
+  return (
+    <button
+      onClick={open}
+      className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-border bg-card/80 px-3 py-1.5 text-xs font-semibold text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-secondary hover:text-foreground"
+    >
+      <HelpCircle className="h-4 w-4" />
+      <span className="hidden sm:inline">How this works</span>
+    </button>
+  );
+}
 
 const NAV = [
   { to: "/", label: "Dashboard", icon: Home },
