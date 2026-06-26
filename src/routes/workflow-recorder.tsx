@@ -15,6 +15,10 @@ import {
   BookOpen,
   Eye,
   CheckCircle2,
+  Pencil,
+  Upload,
+  Code2,
+  FileCode,
 } from "lucide-react";
 import * as Tabs from "@radix-ui/react-tabs";
 import {
