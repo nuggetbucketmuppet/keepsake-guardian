@@ -9,9 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WorkflowRecorderRouteImport } from './routes/workflow-recorder'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiClaudeRouteImport } from './routes/api/claude'
 
+const WorkflowRecorderRoute = WorkflowRecorderRouteImport.update({
+  id: '/workflow-recorder',
+  path: '/workflow-recorder',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -25,32 +31,43 @@ const ApiClaudeRoute = ApiClaudeRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/workflow-recorder': typeof WorkflowRecorderRoute
   '/api/claude': typeof ApiClaudeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/workflow-recorder': typeof WorkflowRecorderRoute
   '/api/claude': typeof ApiClaudeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/workflow-recorder': typeof WorkflowRecorderRoute
   '/api/claude': typeof ApiClaudeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/claude'
+  fullPaths: '/' | '/workflow-recorder' | '/api/claude'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/claude'
-  id: '__root__' | '/' | '/api/claude'
+  to: '/' | '/workflow-recorder' | '/api/claude'
+  id: '__root__' | '/' | '/workflow-recorder' | '/api/claude'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  WorkflowRecorderRoute: typeof WorkflowRecorderRoute
   ApiClaudeRoute: typeof ApiClaudeRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/workflow-recorder': {
+      id: '/workflow-recorder'
+      path: '/workflow-recorder'
+      fullPath: '/workflow-recorder'
+      preLoaderRoute: typeof WorkflowRecorderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -70,6 +87,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  WorkflowRecorderRoute: WorkflowRecorderRoute,
   ApiClaudeRoute: ApiClaudeRoute,
 }
 export const routeTree = rootRouteImport
