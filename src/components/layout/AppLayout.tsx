@@ -136,7 +136,16 @@ function AppLayoutInner({ children }: { children: ReactNode }) {
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
           <span className="font-display font-bold">KeepSake</span>
+          <div className="ml-auto">
+            <HowThisWorksButton />
+          </div>
         </header>
+        {/* Floating help button on desktop */}
+        <div className="pointer-events-none fixed right-5 top-4 z-30 hidden lg:block">
+          <div className="pointer-events-auto">
+            <HowThisWorksButton />
+          </div>
+        </div>
         <main className="min-w-0 flex-1">{children}</main>
       </div>
     </div>
