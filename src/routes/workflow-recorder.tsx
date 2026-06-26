@@ -548,14 +548,23 @@ function RecordedTable({ onEdit }: { onEdit: (wf: Workflow) => void }) {
                 <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{w.aiTool}</td>
                 <td className="px-4 py-3 text-muted-foreground">{w.classification}</td>
                 <td className="px-4 py-3"><ScoreBadge score={w.resilienceScore} /></td>
-                <td className="px-4 py-3 text-xs text-muted-foreground">{formatDistanceToNow(new Date(w.lastUpdated), { addSuffix: true })}</td>
+                <td className="px-4 py-3 text-xs text-muted-foreground">
+                  {formatDistanceToNow(new Date(w.lastUpdated), { addSuffix: true })}
+                  {w.lastEdited && (
+                    <span className="mt-0.5 block text-[10px] text-muted-foreground/70">
+                      edited {formatDistanceToNow(new Date(w.lastEdited), { addSuffix: true })}
+                    </span>
+                  )}
+                </td>
                 <td className="px-4 py-3">
                   <div className="flex justify-end gap-1">
                     <button onClick={() => setView(w)} className="rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground" aria-label="View"><Eye className="h-4 w-4" /></button>
+                    <button onClick={() => onEdit(w)} className="rounded-md p-1.5 text-muted-foreground hover:bg-primary/15 hover:text-primary" aria-label="Edit"><Pencil className="h-4 w-4" /></button>
                     <button onClick={() => navigate({ to: "/fallback-guides" })} className="rounded-md p-1.5 text-muted-foreground hover:bg-accent/15 hover:text-accent" aria-label="Generate guide"><BookOpen className="h-4 w-4" /></button>
                     <button onClick={() => { deleteWorkflow(w.id); toast.success("Workflow deleted."); }} className="rounded-md p-1.5 text-muted-foreground hover:bg-danger/15 hover:text-danger" aria-label="Delete"><Trash2 className="h-4 w-4" /></button>
                   </div>
                 </td>
+
               </tr>
             ))}
           </tbody>
