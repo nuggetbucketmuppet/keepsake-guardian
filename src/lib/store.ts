@@ -89,8 +89,7 @@ export function updateWorkflow(id: string, patch: Partial<Workflow>) {
 
 // ---- Guides ----
 export function useGuides(): FallbackGuide[] {
-  const data = useStore<FallbackGuide[] | null>(KEYS.guides, null);
-  return data ?? (typeof window !== "undefined" ? read(KEYS.guides, seedGuides) : seedGuides);
+  return useStore<FallbackGuide[]>(KEYS.guides, seedGuides);
 }
 export function saveGuide(g: FallbackGuide) {
   const list = read<FallbackGuide[]>(KEYS.guides, seedGuides);
