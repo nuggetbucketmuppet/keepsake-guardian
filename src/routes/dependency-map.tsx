@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState, useCallback } from "react";
 import ReactFlow, {
   Background,
@@ -128,6 +128,7 @@ const seedEdges: Edge[] = [
 ];
 
 function DependencyMap() {
+  const navigate = useNavigate();
   const [dept, setDept] = useState("All");
   const [highOnly, setHighOnly] = useState(false);
   const [restrictedOnly, setRestrictedOnly] = useState(false);
@@ -221,7 +222,7 @@ function DependencyMap() {
                 <p className="mt-1 text-xs text-muted-foreground">{selected.data.risk ?? (selected.data.highDependency ? "High AI dependency with limited human oversight." : "Moderate exposure; monitor for drift.")}</p>
               </div>
               {selected.data.kind === "process" && (
-                <Button variant="accent" className="w-full"><BookOpen className="h-4 w-4" /> Generate Fallback Guide</Button>
+                <Button variant="accent" className="w-full" onClick={() => navigate({ to: "/fallback-guides" })}><BookOpen className="h-4 w-4" /> Generate Fallback Guide</Button>
               )}
             </motion.div>
           )}

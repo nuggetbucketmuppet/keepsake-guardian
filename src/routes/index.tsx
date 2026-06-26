@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { differenceInDays, format, formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
 import {
@@ -37,16 +38,24 @@ function Dashboard() {
   const guides = useGuides();
   const drills = useDrills();
 
+  // Date-derived values depend on the current clock, which differs between the
+  // server render and the client. Defer them until after mount so SSR and the
+  // first client render match (avoids hydration mismatch).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const avgResilience = workflows.length
     ? Math.round(workflows.reduce((s, w) => s + w.resilienceScore, 0) / workflows.length)
     : 0;
   const depRisk = workflows.length
     ? Math.round(workflows.reduce((s, w) => s + (100 - w.resilienceScore), 0) / workflows.length)
     : 0;
-  const drillsPassedMonth = drills.filter(
-    (d) => d.passed && differenceInDays(new Date(), new Date(d.dateRun)) <= 30,
-  ).length;
-  const decayAlerts = workflows.filter((w) => differenceInDays(new Date(), new Date(w.lastHumanTouch)) >= 30).length;
+  const drillsPassedMonth = mounted
+    ? drills.filter((d) => d.passed && differenceInDays(new Date(), new Date(d.dateRun)) <= 30).length
+    : 0;
+  const decayAlerts = mounted
+    ? workflows.filter((w) => differenceInDays(new Date(), new Date(w.lastHumanTouch)) >= 30).length
+    : 0;
 
   type Activity = { icon: typeof Activity; color: string; text: string; time: string };
   const activity: Activity[] = [
@@ -68,15 +77,17 @@ function Dashboard() {
       text: `Drill "${d.name}" completed — grade ${d.grade} (${d.readinessScore}%)`,
       time: d.dateRun,
     })),
-    ...workflows
-      .filter((w) => differenceInDays(new Date(), new Date(w.lastHumanTouch)) >= 30)
-      .slice(0, 3)
-      .map((w) => ({
-        icon: AlertTriangle,
-        color: "#ef4444",
-        text: `Knowledge decay alert: "${w.name}" untouched ${differenceInDays(new Date(), new Date(w.lastHumanTouch))} days`,
-        time: w.lastUpdated,
-      })),
+    ...(mounted
+      ? workflows
+          .filter((w) => differenceInDays(new Date(), new Date(w.lastHumanTouch)) >= 30)
+          .slice(0, 3)
+          .map((w) => ({
+            icon: AlertTriangle,
+            color: "#ef4444",
+            text: `Knowledge decay alert: "${w.name}" untouched ${differenceInDays(new Date(), new Date(w.lastHumanTouch))} days`,
+            time: w.lastUpdated,
+          }))
+      : []),
   ].sort((a, b) => +new Date(b.time) - +new Date(a.time));
 
   const quickActions = [
@@ -91,7 +102,7 @@ function Dashboard() {
         title="Operational Resilience Overview"
         subtitle={
           <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span>{format(new Date(), "EEEE, d MMMM yyyy")}</span>
+            <span suppressHydrationWarning>{mounted ? format(new Date(), "EEEE, d MMMM yyyy") : ""}</span>
             <span className="inline-flex items-center gap-1.5 text-accent">
               <Radio className="h-3.5 w-3.5" /> Last system sync: 2 minutes ago
             </span>
@@ -177,8 +188,8 @@ function Dashboard() {
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm">{a.text}</p>
-                  <p className="font-mono text-[11px] text-muted-foreground">
-                    {formatDistanceToNow(new Date(a.time), { addSuffix: true })}
+                  <p className="font-mono text-[11px] text-muted-foreground" suppressHydrationWarning>
+                    {mounted ? formatDistanceToNow(new Date(a.time), { addSuffix: true }) : ""}
                   </p>
                 </div>
               </div>

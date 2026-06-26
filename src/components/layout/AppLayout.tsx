@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
+import { toast } from "sonner";
 import {
   Home,
   Activity,
@@ -81,6 +82,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
             </div>
             <button
               aria-label="Log out"
+              onClick={() => toast.success("You have been signed out.")}
               className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-danger"
             >
               <LogOut className="h-4 w-4" />

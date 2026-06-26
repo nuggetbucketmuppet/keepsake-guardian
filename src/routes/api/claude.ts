@@ -25,10 +25,6 @@ export const Route = createFileRoute("/api/claude")({
     handlers: {
       POST: async ({ request }) => {
         try {
-          const apiKey = process.env.ANTHROPIC_API_KEY;
-          if (!apiKey) {
-            return Response.json({ error: "AI service is not configured." }, { status: 500 });
-          }
           const body = (await request.json()) as { kind?: string; payload?: unknown };
           const kind = body.kind ?? "";
           const system = SYSTEM_PROMPTS[kind];
@@ -36,32 +32,70 @@ export const Route = createFileRoute("/api/claude")({
             return Response.json({ error: "Unknown request type." }, { status: 400 });
           }
 
-          const res = await fetch("https://api.anthropic.com/v1/messages", {
-            method: "POST",
-            headers: {
-              "content-type": "application/json",
-              "x-api-key": apiKey,
-              "anthropic-version": "2023-06-01",
-            },
-            body: JSON.stringify({
-              model: "claude-sonnet-4-6",
-              max_tokens: 4096,
-              system,
-              messages: [{ role: "user", content: JSON.stringify(body.payload ?? {}) }],
-            }),
-          });
+          const userContent = JSON.stringify(body.payload ?? {});
 
-          if (!res.ok) {
-            const errText = await res.text();
-            console.error("Anthropic error", res.status, errText);
-            return Response.json(
-              { error: `AI request failed (${res.status}). Please try again.` },
-              { status: 502 },
-            );
+          // Prefer the Lovable AI Gateway (managed key, always available).
+          const lovableKey = process.env.LOVABLE_API_KEY;
+          const anthropicKey = process.env.ANTHROPIC_API_KEY;
+
+          let text = "";
+
+          if (lovableKey) {
+            const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+              method: "POST",
+              headers: {
+                "content-type": "application/json",
+                authorization: `Bearer ${lovableKey}`,
+              },
+              body: JSON.stringify({
+                model: "google/gemini-2.5-flash",
+                messages: [
+                  { role: "system", content: system },
+                  { role: "user", content: userContent },
+                ],
+              }),
+            });
+            if (!res.ok) {
+              const errText = await res.text();
+              console.error("AI gateway error", res.status, errText);
+              return Response.json(
+                { error: `AI request failed (${res.status}). Please try again.` },
+                { status: 502 },
+              );
+            }
+            const data = (await res.json()) as {
+              choices?: { message?: { content?: string } }[];
+            };
+            text = data.choices?.[0]?.message?.content ?? "";
+          } else if (anthropicKey) {
+            const res = await fetch("https://api.anthropic.com/v1/messages", {
+              method: "POST",
+              headers: {
+                "content-type": "application/json",
+                "x-api-key": anthropicKey,
+                "anthropic-version": "2023-06-01",
+              },
+              body: JSON.stringify({
+                model: "claude-sonnet-4-6",
+                max_tokens: 4096,
+                system,
+                messages: [{ role: "user", content: userContent }],
+              }),
+            });
+            if (!res.ok) {
+              const errText = await res.text();
+              console.error("Anthropic error", res.status, errText);
+              return Response.json(
+                { error: `AI request failed (${res.status}). Please try again.` },
+                { status: 502 },
+              );
+            }
+            const data = (await res.json()) as { content?: { text?: string }[] };
+            text = data.content?.[0]?.text ?? "";
+          } else {
+            return Response.json({ error: "AI service is not configured." }, { status: 500 });
           }
 
-          const data = (await res.json()) as { content?: { text?: string }[] };
-          const text = data.content?.[0]?.text ?? "";
           let parsed: unknown;
           try {
             parsed = extractJson(text);
