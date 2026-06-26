@@ -307,7 +307,12 @@ function RecordForm({ initial, onSaved }: { initial?: Workflow | null; onSaved?:
           />
         </SectionCard>
 
-        <SectionCard n={5} title="Data Used">
+        <SectionCard n={5} title="Add System Processes">
+          <CodeCard code={code} setCode={setCode} language={codeLanguage} setLanguage={setCodeLanguage} />
+        </SectionCard>
+
+        <SectionCard n={6} title="Data Used">
+
           <DynamicRows
             rows={data}
             onChange={setData}
