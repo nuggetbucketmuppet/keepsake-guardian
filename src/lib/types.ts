@@ -61,9 +61,12 @@ export interface Workflow {
   resilienceScore: number;
   analysis?: AnalysisResult;
   lastUpdated: string;
+  lastEdited?: string; // ISO date of last manual edit
   lastHumanTouch: string; // ISO date
   automationPaused?: boolean;
   hasGuide?: boolean;
+  code?: string; // uploaded/pasted automation code or pseudocode
+  codeLanguage?: string;
 }
 
 export interface GuideStep {
