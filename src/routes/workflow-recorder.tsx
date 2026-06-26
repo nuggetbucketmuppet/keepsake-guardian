@@ -338,7 +338,7 @@ function RecordForm({ initial, onSaved }: { initial?: Workflow | null; onSaved?:
               <button
                 type="button"
                 onClick={() => setApprovalsSkipped((v) => !v)}
-                className={`relative h-6 w-11 rounded-full transition-colors ${approvalsSkipped ? "bg-danger" : "bg-secondary"}`}
+                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${approvalsSkipped ? "bg-danger" : "bg-secondary"}`}
                 aria-pressed={approvalsSkipped}
               >
                 <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${approvalsSkipped ? "translate-x-5" : "translate-x-0.5"}`} />
