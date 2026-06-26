@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useSyncExternalStore } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import type { Workflow, FallbackGuide, DrillRecord } from "./types";
 import { seedWorkflows, seedGuides, seedDrills } from "./seed";
 
@@ -37,24 +37,36 @@ function subscribe(l: Listener) {
   return () => listeners.delete(l);
 }
 
+// Cache parsed snapshots per key so getSnapshot returns a stable reference
+// until the underlying raw string actually changes. Without this,
+// useSyncExternalStore sees a new object every render and loops forever.
+const snapshotCache = new Map<string, { raw: string | null; value: unknown }>();
+
+function getSnapshot<T>(key: string, fallback: T): T {
+  const raw = typeof window === "undefined" ? null : localStorage.getItem(key);
+  const cached = snapshotCache.get(key);
+  if (cached && cached.raw === raw) return cached.value as T;
+  let value: T;
+  try {
+    value = raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    value = fallback;
+  }
+  snapshotCache.set(key, { raw, value });
+  return value;
+}
+
 function useStore<T>(key: string, fallback: T): T {
   return useSyncExternalStore(
     subscribe,
-    () => {
-      const raw = localStorage.getItem(key);
-      return raw ? (JSON.parse(raw) as T) : fallback;
-    },
+    () => getSnapshot<T>(key, fallback),
     () => fallback,
   );
 }
 
 // ---- Workflows ----
 export function useWorkflows(): Workflow[] {
-  const data = useStore<Workflow[] | null>(KEYS.workflows, null);
-  useEffect(() => {
-    if (data === null) read(KEYS.workflows, seedWorkflows), emit();
-  }, [data]);
-  return data ?? (typeof window !== "undefined" ? read(KEYS.workflows, seedWorkflows) : seedWorkflows);
+  return useStore<Workflow[]>(KEYS.workflows, seedWorkflows);
 }
 export function saveWorkflow(wf: Workflow) {
   const list = read<Workflow[]>(KEYS.workflows, seedWorkflows);
@@ -77,8 +89,7 @@ export function updateWorkflow(id: string, patch: Partial<Workflow>) {
 
 // ---- Guides ----
 export function useGuides(): FallbackGuide[] {
-  const data = useStore<FallbackGuide[] | null>(KEYS.guides, null);
-  return data ?? (typeof window !== "undefined" ? read(KEYS.guides, seedGuides) : seedGuides);
+  return useStore<FallbackGuide[]>(KEYS.guides, seedGuides);
 }
 export function saveGuide(g: FallbackGuide) {
   const list = read<FallbackGuide[]>(KEYS.guides, seedGuides);
@@ -99,8 +110,7 @@ export function updateGuide(id: string, patch: Partial<FallbackGuide>) {
 
 // ---- Drills ----
 export function useDrills(): DrillRecord[] {
-  const data = useStore<DrillRecord[] | null>(KEYS.drills, null);
-  return data ?? (typeof window !== "undefined" ? read(KEYS.drills, seedDrills) : seedDrills);
+  return useStore<DrillRecord[]>(KEYS.drills, seedDrills);
 }
 export function saveDrill(d: DrillRecord) {
   const list = read<DrillRecord[]>(KEYS.drills, seedDrills);
