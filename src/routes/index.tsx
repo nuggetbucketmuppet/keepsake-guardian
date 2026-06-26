@@ -100,7 +100,7 @@ function Dashboard() {
         title="Operational Resilience Overview"
         subtitle={
           <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span>{format(new Date(), "EEEE, d MMMM yyyy")}</span>
+            <span suppressHydrationWarning>{mounted ? format(new Date(), "EEEE, d MMMM yyyy") : ""}</span>
             <span className="inline-flex items-center gap-1.5 text-accent">
               <Radio className="h-3.5 w-3.5" /> Last system sync: 2 minutes ago
             </span>
