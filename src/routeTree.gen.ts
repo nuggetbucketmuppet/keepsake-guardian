@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorkflowRecorderRouteImport } from './routes/workflow-recorder'
+import { Route as FallbackGuidesRouteImport } from './routes/fallback-guides'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiClaudeRouteImport } from './routes/api/claude'
 
 const WorkflowRecorderRoute = WorkflowRecorderRouteImport.update({
   id: '/workflow-recorder',
   path: '/workflow-recorder',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FallbackGuidesRoute = FallbackGuidesRouteImport.update({
+  id: '/fallback-guides',
+  path: '/fallback-guides',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -31,30 +37,39 @@ const ApiClaudeRoute = ApiClaudeRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/fallback-guides': typeof FallbackGuidesRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
   '/api/claude': typeof ApiClaudeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/fallback-guides': typeof FallbackGuidesRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
   '/api/claude': typeof ApiClaudeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/fallback-guides': typeof FallbackGuidesRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
   '/api/claude': typeof ApiClaudeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/workflow-recorder' | '/api/claude'
+  fullPaths: '/' | '/fallback-guides' | '/workflow-recorder' | '/api/claude'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/workflow-recorder' | '/api/claude'
-  id: '__root__' | '/' | '/workflow-recorder' | '/api/claude'
+  to: '/' | '/fallback-guides' | '/workflow-recorder' | '/api/claude'
+  id:
+    | '__root__'
+    | '/'
+    | '/fallback-guides'
+    | '/workflow-recorder'
+    | '/api/claude'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  FallbackGuidesRoute: typeof FallbackGuidesRoute
   WorkflowRecorderRoute: typeof WorkflowRecorderRoute
   ApiClaudeRoute: typeof ApiClaudeRoute
 }
@@ -66,6 +81,13 @@ declare module '@tanstack/react-router' {
       path: '/workflow-recorder'
       fullPath: '/workflow-recorder'
       preLoaderRoute: typeof WorkflowRecorderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/fallback-guides': {
+      id: '/fallback-guides'
+      path: '/fallback-guides'
+      fullPath: '/fallback-guides'
+      preLoaderRoute: typeof FallbackGuidesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -87,6 +109,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  FallbackGuidesRoute: FallbackGuidesRoute,
   WorkflowRecorderRoute: WorkflowRecorderRoute,
   ApiClaudeRoute: ApiClaudeRoute,
 }
