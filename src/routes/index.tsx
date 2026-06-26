@@ -38,16 +38,24 @@ function Dashboard() {
   const guides = useGuides();
   const drills = useDrills();
 
+  // Date-derived values depend on the current clock, which differs between the
+  // server render and the client. Defer them until after mount so SSR and the
+  // first client render match (avoids hydration mismatch).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const avgResilience = workflows.length
     ? Math.round(workflows.reduce((s, w) => s + w.resilienceScore, 0) / workflows.length)
     : 0;
   const depRisk = workflows.length
     ? Math.round(workflows.reduce((s, w) => s + (100 - w.resilienceScore), 0) / workflows.length)
     : 0;
-  const drillsPassedMonth = drills.filter(
-    (d) => d.passed && differenceInDays(new Date(), new Date(d.dateRun)) <= 30,
-  ).length;
-  const decayAlerts = workflows.filter((w) => differenceInDays(new Date(), new Date(w.lastHumanTouch)) >= 30).length;
+  const drillsPassedMonth = mounted
+    ? drills.filter((d) => d.passed && differenceInDays(new Date(), new Date(d.dateRun)) <= 30).length
+    : 0;
+  const decayAlerts = mounted
+    ? workflows.filter((w) => differenceInDays(new Date(), new Date(w.lastHumanTouch)) >= 30).length
+    : 0;
 
   type Activity = { icon: typeof Activity; color: string; text: string; time: string };
   const activity: Activity[] = [
