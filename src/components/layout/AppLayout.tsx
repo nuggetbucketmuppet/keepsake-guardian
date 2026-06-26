@@ -13,6 +13,7 @@ import {
   X,
   LogOut,
   ShieldCheck,
+  Code2,
 } from "lucide-react";
 
 const NAV = [
@@ -22,6 +23,7 @@ const NAV = [
   { to: "/dependency-map", label: "Dependency Map", icon: GitFork },
   { to: "/failure-drills", label: "Failure Drills", icon: Zap },
   { to: "/knowledge-decay", label: "Knowledge Decay", icon: Clock },
+  { to: "/system-processes", label: "System Processes", icon: Code2 },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
