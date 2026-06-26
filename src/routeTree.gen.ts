@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorkflowRecorderRouteImport } from './routes/workflow-recorder'
 import { Route as FallbackGuidesRouteImport } from './routes/fallback-guides'
+import { Route as FailureDrillsRouteImport } from './routes/failure-drills'
 import { Route as DependencyMapRouteImport } from './routes/dependency-map'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiClaudeRouteImport } from './routes/api/claude'
@@ -23,6 +24,11 @@ const WorkflowRecorderRoute = WorkflowRecorderRouteImport.update({
 const FallbackGuidesRoute = FallbackGuidesRouteImport.update({
   id: '/fallback-guides',
   path: '/fallback-guides',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FailureDrillsRoute = FailureDrillsRouteImport.update({
+  id: '/failure-drills',
+  path: '/failure-drills',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DependencyMapRoute = DependencyMapRouteImport.update({
@@ -44,6 +50,7 @@ const ApiClaudeRoute = ApiClaudeRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dependency-map': typeof DependencyMapRoute
+  '/failure-drills': typeof FailureDrillsRoute
   '/fallback-guides': typeof FallbackGuidesRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
   '/api/claude': typeof ApiClaudeRoute
@@ -51,6 +58,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dependency-map': typeof DependencyMapRoute
+  '/failure-drills': typeof FailureDrillsRoute
   '/fallback-guides': typeof FallbackGuidesRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
   '/api/claude': typeof ApiClaudeRoute
@@ -59,6 +67,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dependency-map': typeof DependencyMapRoute
+  '/failure-drills': typeof FailureDrillsRoute
   '/fallback-guides': typeof FallbackGuidesRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
   '/api/claude': typeof ApiClaudeRoute
@@ -68,6 +77,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dependency-map'
+    | '/failure-drills'
     | '/fallback-guides'
     | '/workflow-recorder'
     | '/api/claude'
@@ -75,6 +85,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/dependency-map'
+    | '/failure-drills'
     | '/fallback-guides'
     | '/workflow-recorder'
     | '/api/claude'
@@ -82,6 +93,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/dependency-map'
+    | '/failure-drills'
     | '/fallback-guides'
     | '/workflow-recorder'
     | '/api/claude'
@@ -90,6 +102,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DependencyMapRoute: typeof DependencyMapRoute
+  FailureDrillsRoute: typeof FailureDrillsRoute
   FallbackGuidesRoute: typeof FallbackGuidesRoute
   WorkflowRecorderRoute: typeof WorkflowRecorderRoute
   ApiClaudeRoute: typeof ApiClaudeRoute
@@ -109,6 +122,13 @@ declare module '@tanstack/react-router' {
       path: '/fallback-guides'
       fullPath: '/fallback-guides'
       preLoaderRoute: typeof FallbackGuidesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/failure-drills': {
+      id: '/failure-drills'
+      path: '/failure-drills'
+      fullPath: '/failure-drills'
+      preLoaderRoute: typeof FailureDrillsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dependency-map': {
@@ -138,6 +158,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DependencyMapRoute: DependencyMapRoute,
+  FailureDrillsRoute: FailureDrillsRoute,
   FallbackGuidesRoute: FallbackGuidesRoute,
   WorkflowRecorderRoute: WorkflowRecorderRoute,
   ApiClaudeRoute: ApiClaudeRoute,
