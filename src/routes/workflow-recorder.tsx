@@ -331,7 +331,7 @@ function RecordForm({ initial, onSaved }: { initial?: Workflow | null; onSaved?:
           />
         </SectionCard>
 
-        <SectionCard n={6} title="Approvals and Overrides">
+        <SectionCard n={7} title="Approvals and Overrides">
           <div className="space-y-4">
             <label className="flex items-center justify-between rounded-md border border-border bg-secondary/40 px-4 py-3">
               <span className="text-sm font-medium">Were any approvals skipped?</span>
