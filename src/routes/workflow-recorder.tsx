@@ -486,7 +486,7 @@ function DynamicRows<T>({
   );
 }
 
-function RecordedTable() {
+function RecordedTable({ onEdit }: { onEdit: (wf: Workflow) => void }) {
   const workflows = useWorkflows();
   const navigate = useNavigate();
   const [q, setQ] = useState("");
