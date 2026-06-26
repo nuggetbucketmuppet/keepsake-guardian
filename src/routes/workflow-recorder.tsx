@@ -449,6 +449,128 @@ function AnalysisPanel({ result }: { result: AnalysisResult }) {
   );
 }
 
+const CODE_EXTS = [".py", ".js", ".ts", ".json", ".yaml", ".yml", ".txt", ".md"];
+
+function CodeCard({
+  code,
+  setCode,
+  language,
+  setLanguage,
+}: {
+  code: string;
+  setCode: (v: string) => void;
+  language: string;
+  setLanguage: (v: string) => void;
+}) {
+  const [mode, setMode] = useState<"manual" | "upload">(code ? "upload" : "manual");
+  const [dragging, setDragging] = useState(false);
+  const [fileName, setFileName] = useState("");
+
+  const readFile = (file: File) => {
+    const ext = "." + (file.name.split(".").pop() ?? "").toLowerCase();
+    if (!CODE_EXTS.includes(ext)) {
+      toast.error(`Unsupported file type. Allowed: ${CODE_EXTS.join(", ")}`);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCode(String(reader.result ?? ""));
+      setFileName(file.name);
+      const langMap: Record<string, string> = { ".py": "python", ".ts": "typescript", ".js": "javascript", ".json": "json", ".yaml": "yaml", ".yml": "yaml", ".sql": "sql" };
+      setLanguage(langMap[ext] ?? "pseudocode");
+      toast.success(`Loaded ${file.name} (kept in-browser only).`);
+    };
+    reader.readAsText(file);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="inline-flex gap-1 rounded-md border border-border bg-secondary/40 p-1">
+        {[
+          { v: "manual", label: "Manual Entry", icon: Code2 },
+          { v: "upload", label: "Upload Code / Pseudocode", icon: Upload },
+        ].map((m) => (
+          <button
+            key={m.v}
+            type="button"
+            onClick={() => setMode(m.v as "manual" | "upload")}
+            className={`inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-semibold transition-colors ${
+              mode === m.v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <m.icon className="h-3.5 w-3.5" /> {m.label}
+          </button>
+        ))}
+      </div>
+
+      <p className="text-xs text-muted-foreground">
+        Upload automation code or pseudocode — sensitive logic stays local and is never stored.
+      </p>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <label className="text-xs font-medium text-muted-foreground">Language</label>
+        <select className={`${inputCls} w-44`} value={language} onChange={(e) => setLanguage(e.target.value)}>
+          {["pseudocode", "python", "typescript", "javascript", "json", "yaml", "sql"].map((l) => (
+            <option key={l}>{l}</option>
+          ))}
+        </select>
+      </div>
+
+      {mode === "upload" && (
+        <div
+          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragging(false);
+            const f = e.dataTransfer.files?.[0];
+            if (f) readFile(f);
+          }}
+          className={`flex flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed px-4 py-8 text-center transition-colors ${
+            dragging ? "border-primary bg-primary/10" : "border-border bg-secondary/30"
+          }`}
+        >
+          <FileCode className="h-7 w-7 text-muted-foreground" />
+          <p className="text-sm font-medium">{fileName || "Drag & drop a file here"}</p>
+          <p className="text-xs text-muted-foreground">{CODE_EXTS.join(", ")}</p>
+          <label className="mt-1 cursor-pointer rounded-md border border-border bg-card px-3 py-1.5 text-xs font-semibold hover:bg-secondary">
+            Browse files
+            <input
+              type="file"
+              accept={CODE_EXTS.join(",")}
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) readFile(f); }}
+            />
+          </label>
+        </div>
+      )}
+
+      {mode === "manual" ? (
+        <textarea
+          className={`${inputCls} min-h-[160px] font-mono text-xs leading-relaxed`}
+          placeholder={"# Paste or type automation code / pseudocode\nFOR each invoice IN queue:\n  IF amount > threshold: route_to_human()\n  ELSE: auto_approve()"}
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          spellCheck={false}
+        />
+      ) : (
+        code && (
+          <pre className="max-h-80 overflow-auto rounded-md border border-border bg-[#0b0d13] p-4 font-mono text-xs leading-relaxed text-accent/90">
+            <code>{code}</code>
+          </pre>
+        )
+      )}
+      {code && (
+        <p className="text-xs text-muted-foreground">
+          This code will be sent to the analysis engine for automatic dependency & risk mapping.
+        </p>
+      )}
+    </div>
+  );
+}
+
+
+
 function DynamicRows<T>({
   rows,
   onChange,
