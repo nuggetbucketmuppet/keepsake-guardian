@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useSyncExternalStore } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import type { Workflow, FallbackGuide, DrillRecord } from "./types";
 import { seedWorkflows, seedGuides, seedDrills } from "./seed";
 
