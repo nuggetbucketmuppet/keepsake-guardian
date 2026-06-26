@@ -186,8 +186,8 @@ function Dashboard() {
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm">{a.text}</p>
-                  <p className="font-mono text-[11px] text-muted-foreground">
-                    {formatDistanceToNow(new Date(a.time), { addSuffix: true })}
+                  <p className="font-mono text-[11px] text-muted-foreground" suppressHydrationWarning>
+                    {mounted ? formatDistanceToNow(new Date(a.time), { addSuffix: true }) : ""}
                   </p>
                 </div>
               </div>
