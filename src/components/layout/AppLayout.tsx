@@ -14,7 +14,22 @@ import {
   LogOut,
   ShieldCheck,
   Code2,
+  HelpCircle,
 } from "lucide-react";
+import { OnboardingProvider, useOnboarding } from "@/components/Onboarding";
+
+function HowThisWorksButton() {
+  const { open } = useOnboarding();
+  return (
+    <button
+      onClick={open}
+      className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-border bg-card/80 px-3 py-1.5 text-xs font-semibold text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-secondary hover:text-foreground"
+    >
+      <HelpCircle className="h-4 w-4" />
+      <span className="hidden sm:inline">How this works</span>
+    </button>
+  );
+}
 
 const NAV = [
   { to: "/", label: "Dashboard", icon: Home },
@@ -28,6 +43,14 @@ const NAV = [
 ] as const;
 
 export function AppLayout({ children }: { children: ReactNode }) {
+  return (
+    <OnboardingProvider>
+      <AppLayoutInner>{children}</AppLayoutInner>
+    </OnboardingProvider>
+  );
+}
+
+function AppLayoutInner({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
@@ -113,7 +136,16 @@ export function AppLayout({ children }: { children: ReactNode }) {
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
           <span className="font-display font-bold">KeepSake</span>
+          <div className="ml-auto">
+            <HowThisWorksButton />
+          </div>
         </header>
+        {/* Floating help button on desktop */}
+        <div className="pointer-events-none fixed right-5 top-4 z-30 hidden lg:block">
+          <div className="pointer-events-auto">
+            <HowThisWorksButton />
+          </div>
+        </div>
         <main className="min-w-0 flex-1">{children}</main>
       </div>
     </div>

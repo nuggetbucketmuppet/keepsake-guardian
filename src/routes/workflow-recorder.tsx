@@ -15,6 +15,10 @@ import {
   BookOpen,
   Eye,
   CheckCircle2,
+  Pencil,
+  Upload,
+  Code2,
+  FileCode,
 } from "lucide-react";
 import * as Tabs from "@radix-ui/react-tabs";
 import {
@@ -76,16 +80,28 @@ function SectionCard({ n, title, children }: { n: number; title: string; childre
 }
 
 function WorkflowRecorder() {
+  const [tab, setTab] = useState("record");
+  const [editing, setEditing] = useState<Workflow | null>(null);
+
+  const startEdit = (wf: Workflow) => {
+    setEditing(wf);
+    setTab("record");
+  };
+  const onSaved = () => {
+    setEditing(null);
+    setTab("list");
+  };
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
       <PageHeader
         title="Record an AI Workflow"
         subtitle="Document what your AI agents are doing so your team can take over when needed."
       />
-      <Tabs.Root defaultValue="record">
+      <Tabs.Root value={tab} onValueChange={(v) => { setTab(v); if (v === "record") return; setEditing(null); }}>
         <Tabs.List className="mb-6 inline-flex gap-1 rounded-md border border-border bg-card p-1">
           {[
-            { v: "record", label: "Record New Workflow" },
+            { v: "record", label: editing ? "Edit Workflow" : "Record New Workflow" },
             { v: "list", label: "Recorded Workflows" },
           ].map((t) => (
             <Tabs.Trigger
@@ -98,39 +114,45 @@ function WorkflowRecorder() {
           ))}
         </Tabs.List>
         <Tabs.Content value="record">
-          <RecordForm />
+          <RecordForm key={editing?.id ?? "new"} initial={editing} onSaved={onSaved} />
         </Tabs.Content>
         <Tabs.Content value="list">
-          <RecordedTable />
+          <RecordedTable onEdit={startEdit} />
         </Tabs.Content>
       </Tabs.Root>
     </div>
   );
 }
 
-function RecordForm() {
-  const [name, setName] = useState("");
-  const [department, setDepartment] = useState<Department>("Finance");
-  const [aiTool, setAiTool] = useState("");
-  const [frequency, setFrequency] = useState<Frequency>("Monthly");
-  const [classification, setClassification] = useState<Classification>("Internal");
-  const [taskDescription, setTaskDescription] = useState("");
-  const [expectedOutput, setExpectedOutput] = useState("");
-  const [systems, setSystems] = useState<SystemTouched[]>([
-    { systemName: "NetSuite ERP", action: "Write", dataType: "Invoice records" },
-  ]);
-  const [decisions, setDecisions] = useState<DecisionNode[]>([
-    { decisionPoint: "", options: "", chosen: "", reason: "" },
-  ]);
-  const [data, setData] = useState<DataUsed[]>([{ source: "", type: "Operational", volume: "" }]);
-  const [approvalsSkipped, setApprovalsSkipped] = useState(false);
-  const [skippedWhich, setSkippedWhich] = useState("");
-  const [skippedReason, setSkippedReason] = useState("");
-  const [skippedRisk, setSkippedRisk] = useState<Severity>("medium");
+function RecordForm({ initial, onSaved }: { initial?: Workflow | null; onSaved?: () => void }) {
+  const [name, setName] = useState(initial?.name ?? "");
+  const [department, setDepartment] = useState<Department>(initial?.department ?? "Finance");
+  const [aiTool, setAiTool] = useState(initial?.aiTool ?? "");
+  const [frequency, setFrequency] = useState<Frequency>(initial?.frequency ?? "Monthly");
+  const [classification, setClassification] = useState<Classification>(initial?.classification ?? "Internal");
+  const [taskDescription, setTaskDescription] = useState(initial?.taskDescription ?? "");
+  const [expectedOutput, setExpectedOutput] = useState(initial?.expectedOutput ?? "");
+  const [systems, setSystems] = useState<SystemTouched[]>(
+    initial?.systems?.length ? initial.systems : [{ systemName: "NetSuite ERP", action: "Write", dataType: "Invoice records" }],
+  );
+  const [decisions, setDecisions] = useState<DecisionNode[]>(
+    initial?.decisions?.length ? initial.decisions : [{ decisionPoint: "", options: "", chosen: "", reason: "" }],
+  );
+  const [data, setData] = useState<DataUsed[]>(
+    initial?.data?.length ? initial.data : [{ source: "", type: "Operational", volume: "" }],
+  );
+  const [code, setCode] = useState(initial?.code ?? "");
+  const [codeLanguage, setCodeLanguage] = useState(initial?.codeLanguage ?? "pseudocode");
+  const [approvalsSkipped, setApprovalsSkipped] = useState(initial?.approvalsSkipped ?? false);
+  const [skippedWhich, setSkippedWhich] = useState(initial?.skippedWhich ?? "");
+  const [skippedReason, setSkippedReason] = useState(initial?.skippedReason ?? "");
+  const [skippedRisk, setSkippedRisk] = useState<Severity>(initial?.skippedRisk ?? "medium");
+
+  const isEditing = !!initial;
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
-  const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [result, setResult] = useState<AnalysisResult | null>(initial?.analysis ?? null);
   const [errMsg, setErrMsg] = useState("");
 
   const validate = () => {
@@ -143,27 +165,34 @@ function RecordForm() {
     return Object.keys(e).length === 0;
   };
 
-  const buildWorkflow = (analysis?: AnalysisResult): Workflow => ({
-    id: uid(),
-    name,
-    department,
-    aiTool,
-    frequency,
-    classification,
-    taskDescription,
-    expectedOutput,
-    systems: systems.filter((s) => s.systemName.trim()),
-    decisions: decisions.filter((d) => d.decisionPoint.trim()),
-    data: data.filter((d) => d.source.trim()),
-    approvalsSkipped,
-    skippedWhich,
-    skippedReason,
-    skippedRisk,
-    resilienceScore: analysis?.resilience_score ?? 50,
-    analysis,
-    lastUpdated: new Date().toISOString(),
-    lastHumanTouch: new Date().toISOString(),
-  });
+  const buildWorkflow = (analysis?: AnalysisResult): Workflow => {
+    const now = new Date().toISOString();
+    return {
+      id: initial?.id ?? uid(),
+      name,
+      department,
+      aiTool,
+      frequency,
+      classification,
+      taskDescription,
+      expectedOutput,
+      systems: systems.filter((s) => s.systemName.trim()),
+      decisions: decisions.filter((d) => d.decisionPoint.trim()),
+      data: data.filter((d) => d.source.trim()),
+      code: code.trim() || undefined,
+      codeLanguage: code.trim() ? codeLanguage : undefined,
+      approvalsSkipped,
+      skippedWhich,
+      skippedReason,
+      skippedRisk,
+      resilienceScore: analysis?.resilience_score ?? initial?.resilienceScore ?? 50,
+      analysis,
+      hasGuide: initial?.hasGuide,
+      lastUpdated: now,
+      lastEdited: isEditing ? now : undefined,
+      lastHumanTouch: now,
+    };
+  };
 
   const submit = async () => {
     if (!validate()) {
@@ -178,7 +207,8 @@ function RecordForm() {
       saveWorkflow(wf);
       setResult(analysis);
       setStatus("done");
-      toast.success("Workflow saved and analysed.");
+      toast.success(isEditing ? "Workflow updated and re-analysed." : "Workflow saved and analysed.");
+      onSaved?.();
     } catch (err) {
       setErrMsg(err instanceof Error ? err.message : "Analysis failed.");
       setStatus("error");
@@ -281,7 +311,12 @@ function RecordForm() {
           />
         </SectionCard>
 
-        <SectionCard n={5} title="Data Used">
+        <SectionCard n={5} title="Add System Processes">
+          <CodeCard code={code} setCode={setCode} language={codeLanguage} setLanguage={setCodeLanguage} />
+        </SectionCard>
+
+        <SectionCard n={6} title="Data Used">
+
           <DynamicRows
             rows={data}
             onChange={setData}
@@ -300,14 +335,14 @@ function RecordForm() {
           />
         </SectionCard>
 
-        <SectionCard n={6} title="Approvals and Overrides">
+        <SectionCard n={7} title="Approvals and Overrides">
           <div className="space-y-4">
             <label className="flex items-center justify-between rounded-md border border-border bg-secondary/40 px-4 py-3">
               <span className="text-sm font-medium">Were any approvals skipped?</span>
               <button
                 type="button"
                 onClick={() => setApprovalsSkipped((v) => !v)}
-                className={`relative h-6 w-11 rounded-full transition-colors ${approvalsSkipped ? "bg-danger" : "bg-secondary"}`}
+                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${approvalsSkipped ? "bg-danger" : "bg-secondary"}`}
                 aria-pressed={approvalsSkipped}
               >
                 <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${approvalsSkipped ? "translate-x-5" : "translate-x-0.5"}`} />
@@ -414,6 +449,128 @@ function AnalysisPanel({ result }: { result: AnalysisResult }) {
   );
 }
 
+const CODE_EXTS = [".py", ".js", ".ts", ".json", ".yaml", ".yml", ".txt", ".md"];
+
+function CodeCard({
+  code,
+  setCode,
+  language,
+  setLanguage,
+}: {
+  code: string;
+  setCode: (v: string) => void;
+  language: string;
+  setLanguage: (v: string) => void;
+}) {
+  const [mode, setMode] = useState<"manual" | "upload">(code ? "upload" : "manual");
+  const [dragging, setDragging] = useState(false);
+  const [fileName, setFileName] = useState("");
+
+  const readFile = (file: File) => {
+    const ext = "." + (file.name.split(".").pop() ?? "").toLowerCase();
+    if (!CODE_EXTS.includes(ext)) {
+      toast.error(`Unsupported file type. Allowed: ${CODE_EXTS.join(", ")}`);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCode(String(reader.result ?? ""));
+      setFileName(file.name);
+      const langMap: Record<string, string> = { ".py": "python", ".ts": "typescript", ".js": "javascript", ".json": "json", ".yaml": "yaml", ".yml": "yaml", ".sql": "sql" };
+      setLanguage(langMap[ext] ?? "pseudocode");
+      toast.success(`Loaded ${file.name} (kept in-browser only).`);
+    };
+    reader.readAsText(file);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="inline-flex gap-1 rounded-md border border-border bg-secondary/40 p-1">
+        {[
+          { v: "manual", label: "Manual Entry", icon: Code2 },
+          { v: "upload", label: "Upload Code / Pseudocode", icon: Upload },
+        ].map((m) => (
+          <button
+            key={m.v}
+            type="button"
+            onClick={() => setMode(m.v as "manual" | "upload")}
+            className={`inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-semibold transition-colors ${
+              mode === m.v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <m.icon className="h-3.5 w-3.5" /> {m.label}
+          </button>
+        ))}
+      </div>
+
+      <p className="text-xs text-muted-foreground">
+        Upload automation code or pseudocode — sensitive logic stays local and is never stored.
+      </p>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <label className="text-xs font-medium text-muted-foreground">Language</label>
+        <select className={`${inputCls} w-44`} value={language} onChange={(e) => setLanguage(e.target.value)}>
+          {["pseudocode", "python", "typescript", "javascript", "json", "yaml", "sql"].map((l) => (
+            <option key={l}>{l}</option>
+          ))}
+        </select>
+      </div>
+
+      {mode === "upload" && (
+        <div
+          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragging(false);
+            const f = e.dataTransfer.files?.[0];
+            if (f) readFile(f);
+          }}
+          className={`flex flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed px-4 py-8 text-center transition-colors ${
+            dragging ? "border-primary bg-primary/10" : "border-border bg-secondary/30"
+          }`}
+        >
+          <FileCode className="h-7 w-7 text-muted-foreground" />
+          <p className="text-sm font-medium">{fileName || "Drag & drop a file here"}</p>
+          <p className="text-xs text-muted-foreground">{CODE_EXTS.join(", ")}</p>
+          <label className="mt-1 cursor-pointer rounded-md border border-border bg-card px-3 py-1.5 text-xs font-semibold hover:bg-secondary">
+            Browse files
+            <input
+              type="file"
+              accept={CODE_EXTS.join(",")}
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) readFile(f); }}
+            />
+          </label>
+        </div>
+      )}
+
+      {mode === "manual" ? (
+        <textarea
+          className={`${inputCls} min-h-[160px] font-mono text-xs leading-relaxed`}
+          placeholder={"# Paste or type automation code / pseudocode\nFOR each invoice IN queue:\n  IF amount > threshold: route_to_human()\n  ELSE: auto_approve()"}
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          spellCheck={false}
+        />
+      ) : (
+        code && (
+          <pre className="max-h-80 overflow-auto rounded-md border border-border bg-[#0b0d13] p-4 font-mono text-xs leading-relaxed text-accent/90">
+            <code>{code}</code>
+          </pre>
+        )
+      )}
+      {code && (
+        <p className="text-xs text-muted-foreground">
+          This code will be sent to the analysis engine for automatic dependency & risk mapping.
+        </p>
+      )}
+    </div>
+  );
+}
+
+
+
 function DynamicRows<T>({
   rows,
   onChange,
@@ -455,7 +612,7 @@ function DynamicRows<T>({
   );
 }
 
-function RecordedTable() {
+function RecordedTable({ onEdit }: { onEdit: (wf: Workflow) => void }) {
   const workflows = useWorkflows();
   const navigate = useNavigate();
   const [q, setQ] = useState("");
@@ -517,14 +674,23 @@ function RecordedTable() {
                 <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{w.aiTool}</td>
                 <td className="px-4 py-3 text-muted-foreground">{w.classification}</td>
                 <td className="px-4 py-3"><ScoreBadge score={w.resilienceScore} /></td>
-                <td className="px-4 py-3 text-xs text-muted-foreground">{formatDistanceToNow(new Date(w.lastUpdated), { addSuffix: true })}</td>
+                <td className="px-4 py-3 text-xs text-muted-foreground">
+                  {formatDistanceToNow(new Date(w.lastUpdated), { addSuffix: true })}
+                  {w.lastEdited && (
+                    <span className="mt-0.5 block text-[10px] text-muted-foreground/70">
+                      edited {formatDistanceToNow(new Date(w.lastEdited), { addSuffix: true })}
+                    </span>
+                  )}
+                </td>
                 <td className="px-4 py-3">
                   <div className="flex justify-end gap-1">
                     <button onClick={() => setView(w)} className="rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground" aria-label="View"><Eye className="h-4 w-4" /></button>
+                    <button onClick={() => onEdit(w)} className="rounded-md p-1.5 text-muted-foreground hover:bg-primary/15 hover:text-primary" aria-label="Edit"><Pencil className="h-4 w-4" /></button>
                     <button onClick={() => navigate({ to: "/fallback-guides" })} className="rounded-md p-1.5 text-muted-foreground hover:bg-accent/15 hover:text-accent" aria-label="Generate guide"><BookOpen className="h-4 w-4" /></button>
                     <button onClick={() => { deleteWorkflow(w.id); toast.success("Workflow deleted."); }} className="rounded-md p-1.5 text-muted-foreground hover:bg-danger/15 hover:text-danger" aria-label="Delete"><Trash2 className="h-4 w-4" /></button>
                   </div>
                 </td>
+
               </tr>
             ))}
           </tbody>
