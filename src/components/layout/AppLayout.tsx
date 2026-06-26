@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
+import { toast } from "sonner";
 import {
   Home,
   Activity,
