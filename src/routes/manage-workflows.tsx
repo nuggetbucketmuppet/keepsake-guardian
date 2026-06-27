@@ -175,7 +175,8 @@ function NodesTab() {
       </div>
 
       {filtered.length === 0 ? (
-        <EmptyState title="No matching nodes" description="Try a different search or filter." />
+        <EmptyState icon={<Search className="h-7 w-7" />} title="No matching nodes" description="Try a different search or filter." />
+
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {filtered.map((n) => (
