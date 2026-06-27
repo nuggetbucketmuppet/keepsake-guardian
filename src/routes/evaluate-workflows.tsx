@@ -187,19 +187,15 @@ function EvaluationTab() {
       {result && (
         <Card hover={false} className="overflow-hidden p-5">
           {showScores && (
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-secondary/30 p-4">
-              <div className="flex items-center gap-3">
-                <span className="flex h-12 w-12 items-center justify-center rounded-full text-lg font-extrabold ring-2" style={{ color: scoreHue(result.overall_resilience_score), borderColor: "transparent", boxShadow: `inset 0 0 0 3px ${scoreHue(result.overall_resilience_score)}55` }}>{result.overall_resilience_score}</span>
-                <div>
-                  <p className="text-sm font-bold">Overall map resilience</p>
-                  <p className="text-xs text-muted-foreground">How well the business copes across all dependencies.</p>
-                </div>
+            <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-border bg-secondary/30 p-4">
+              <span className="flex h-12 w-12 items-center justify-center rounded-full text-lg font-extrabold ring-2" style={{ color: scoreHue(result.overall_resilience_score), borderColor: "transparent", boxShadow: `inset 0 0 0 3px ${scoreHue(result.overall_resilience_score)}55` }}>{result.overall_resilience_score}</span>
+              <div>
+                <p className="text-sm font-bold">Overall map resilience</p>
+                <p className="text-xs text-muted-foreground">Scores applied across the platform automatically.</p>
               </div>
-              <Button variant={applied ? "outline" : "primary"} onClick={applyScores} disabled={applied}>
-                {applied ? <><CheckCircle2 className="h-4 w-4" /> Applied site-wide</> : <><Sparkles className="h-4 w-4" /> Apply scores across platform</>}
-              </Button>
             </div>
           )}
+
           <p className="mb-4 text-sm text-muted-foreground">{result.summary}</p>
           <div className="space-y-3">
             {nodes.map((n, i) => <RiskNodeCard key={i} n={n} showScore={showScores} />)}
