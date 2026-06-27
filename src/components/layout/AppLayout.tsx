@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import {
   Home,
   Activity,
+  ListChecks,
   BookOpen,
   GitFork,
   Zap,
