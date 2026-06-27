@@ -212,7 +212,28 @@ export function WorkflowForm({
       .map((q, i) => (answers[i]?.trim() ? `Q: ${q}\nA: ${answers[i].trim()}` : null))
       .filter(Boolean)
       .join("\n");
-    const content = clarifications ? `${baseContent}\n\nCLARIFICATIONS:\n${clarifications}` : baseContent;
+    // Shared-node confirmations from the Examine step.
+    const matchNotes = nodeMatches
+      .map((m, i) => {
+        const d = matchDecision[i];
+        if (d === "yes") return `"${m.detectedName}" is the same as existing node "${m.existingNodeName}".`;
+        if (d === "no") {
+          const nn = matchNewName[i]?.trim();
+          return `"${m.detectedName}" is a NEW node${nn ? ` named "${nn}"` : ""}, distinct from "${m.existingNodeName}".`;
+        }
+        return null;
+      })
+      .filter(Boolean)
+      .join("\n");
+    // Add explicitly-named new nodes as tags so they enter the graph.
+    nodeMatches.forEach((m, i) => {
+      if (matchDecision[i] === "no") {
+        const nn = matchNewName[i]?.trim();
+        if (nn && !tags.some((t) => t.name.toLowerCase() === nn.toLowerCase())) tags.push({ name: nn, type: m.type });
+      }
+    });
+    let content = clarifications ? `${baseContent}\n\nCLARIFICATIONS:\n${clarifications}` : baseContent;
+    if (matchNotes) content = `${content}\n\nSHARED NODE NOTES:\n${matchNotes}`;
     if (!content.trim() && tags.length === 0) {
       toast.error("Describe the workflow or add at least one platform tag.");
       return;
