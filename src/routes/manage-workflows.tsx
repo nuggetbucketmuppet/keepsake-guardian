@@ -48,8 +48,19 @@ function TabButton({ active, onClick, icon, children }: { active: boolean; onCli
 function WorkflowsTab() {
   const navigate = useNavigate();
   const workflows = useWorkflows();
+  const evaluations = useEvaluations();
+  const drills = useDrills();
   const [editing, setEditing] = useState<Workflow | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Workflow | null>(null);
+
+  const complianceFor = (wf: Workflow): number | null => {
+    const e = evaluations.filter((x) => x.workflowId === wf.id).sort((a, b) => b.evaluatedDate.localeCompare(a.evaluatedDate))[0];
+    return e ? e.compliance_score : null;
+  };
+  const drillFor = (wf: Workflow): number | null => {
+    const d = drills.filter((x) => x.team === wf.department).sort((a, b) => b.dateRun.localeCompare(a.dateRun))[0];
+    return d ? d.readinessScore : null;
+  };
 
   if (workflows.length === 0) {
     return (
