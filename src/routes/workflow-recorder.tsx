@@ -23,9 +23,11 @@ function WorkflowUpload() {
       />
       <WorkflowForm onSaved={() => navigate({ to: "/dependency-map" })} />
       <SystemProcessLibrary />
+      <style>{`.inp{width:100%;border-radius:0.375rem;border:1px solid hsl(var(--input,222 13% 25%));background:rgba(30,33,42,0.4);padding:0.5rem 0.75rem;font-size:0.875rem;}.inp:focus-visible{outline:none;box-shadow:0 0 0 1px hsl(var(--ring,250 90% 66%));}`}</style>
     </div>
   );
 }
+
 
 
 // ============= System Process Library =============
