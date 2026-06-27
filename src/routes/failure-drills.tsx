@@ -243,7 +243,10 @@ function RunDrill() {
         </div>
         <div>
           <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Target team to assess</label>
-          <input className={inputCls} value={team} onChange={(e) => setTeam(e.target.value)} placeholder="e.g. Finance Operations" />
+          <select className={inputCls} value={team} onChange={(e) => setTeam(e.target.value)}>
+            <option value="">Select a department…</option>
+            {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
+          </select>
         </div>
       </div>
 
