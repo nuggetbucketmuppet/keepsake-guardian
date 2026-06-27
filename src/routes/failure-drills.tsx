@@ -70,7 +70,8 @@ function RunDrill() {
   const [agent, setAgent] = useState("");
   const [affected, setAffected] = useState<string[]>([]);
   const [duration, setDuration] = useState("1 day");
-  const [mode, setMode] = useState("Tabletop Exercise");
+  const [mode, setMode] = useState("Guided");
+  const [evidence, setEvidence] = useState<Record<string, string>>({});
   const [team, setTeam] = useState("");
 
   const [phase, setPhase] = useState<Phase>("config");
