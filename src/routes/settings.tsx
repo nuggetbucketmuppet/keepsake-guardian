@@ -33,7 +33,7 @@ function SettingsPage() {
         </Card>
 
         <Card hover={false} className="p-6">
-          <SectionHead icon={<SlidersHorizontal className="h-4 w-4" />} title="Knowledge Decay Thresholds" />
+          <SectionHead icon={<SlidersHorizontal className="h-4 w-4" />} title="Review Health Thresholds" />
           <p className="mb-4 text-sm text-muted-foreground">Days since last human execution before each alert level triggers.</p>
           <div className="grid gap-4 sm:grid-cols-3">
             <Threshold label="Aging (amber)" value={aging} onChange={setAging} color="#f59e0b" />

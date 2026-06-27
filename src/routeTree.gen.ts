@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorkflowRecorderRouteImport } from './routes/workflow-recorder'
 import { Route as SystemProcessesRouteImport } from './routes/system-processes'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ReviewHealthRouteImport } from './routes/review-health'
 import { Route as PolicyCentreRouteImport } from './routes/policy-centre'
 import { Route as KnowledgeDecayRouteImport } from './routes/knowledge-decay'
 import { Route as FallbackGuidesRouteImport } from './routes/fallback-guides'
@@ -36,6 +37,11 @@ const SystemProcessesRoute = SystemProcessesRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReviewHealthRoute = ReviewHealthRouteImport.update({
+  id: '/review-health',
+  path: '/review-health',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PolicyCentreRoute = PolicyCentreRouteImport.update({
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/fallback-guides': typeof FallbackGuidesRoute
   '/knowledge-decay': typeof KnowledgeDecayRoute
   '/policy-centre': typeof PolicyCentreRoute
+  '/review-health': typeof ReviewHealthRoute
   '/settings': typeof SettingsRoute
   '/system-processes': typeof SystemProcessesRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
@@ -111,6 +118,7 @@ export interface FileRoutesByTo {
   '/fallback-guides': typeof FallbackGuidesRoute
   '/knowledge-decay': typeof KnowledgeDecayRoute
   '/policy-centre': typeof PolicyCentreRoute
+  '/review-health': typeof ReviewHealthRoute
   '/settings': typeof SettingsRoute
   '/system-processes': typeof SystemProcessesRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
@@ -127,6 +135,7 @@ export interface FileRoutesById {
   '/fallback-guides': typeof FallbackGuidesRoute
   '/knowledge-decay': typeof KnowledgeDecayRoute
   '/policy-centre': typeof PolicyCentreRoute
+  '/review-health': typeof ReviewHealthRoute
   '/settings': typeof SettingsRoute
   '/system-processes': typeof SystemProcessesRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
@@ -144,6 +153,7 @@ export interface FileRouteTypes {
     | '/fallback-guides'
     | '/knowledge-decay'
     | '/policy-centre'
+    | '/review-health'
     | '/settings'
     | '/system-processes'
     | '/workflow-recorder'
@@ -159,6 +169,7 @@ export interface FileRouteTypes {
     | '/fallback-guides'
     | '/knowledge-decay'
     | '/policy-centre'
+    | '/review-health'
     | '/settings'
     | '/system-processes'
     | '/workflow-recorder'
@@ -174,6 +185,7 @@ export interface FileRouteTypes {
     | '/fallback-guides'
     | '/knowledge-decay'
     | '/policy-centre'
+    | '/review-health'
     | '/settings'
     | '/system-processes'
     | '/workflow-recorder'
@@ -190,6 +202,7 @@ export interface RootRouteChildren {
   FallbackGuidesRoute: typeof FallbackGuidesRoute
   KnowledgeDecayRoute: typeof KnowledgeDecayRoute
   PolicyCentreRoute: typeof PolicyCentreRoute
+  ReviewHealthRoute: typeof ReviewHealthRoute
   SettingsRoute: typeof SettingsRoute
   SystemProcessesRoute: typeof SystemProcessesRoute
   WorkflowRecorderRoute: typeof WorkflowRecorderRoute
@@ -220,6 +233,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/review-health': {
+      id: '/review-health'
+      path: '/review-health'
+      fullPath: '/review-health'
+      preLoaderRoute: typeof ReviewHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/policy-centre': {
@@ -302,6 +322,7 @@ const rootRouteChildren: RootRouteChildren = {
   FallbackGuidesRoute: FallbackGuidesRoute,
   KnowledgeDecayRoute: KnowledgeDecayRoute,
   PolicyCentreRoute: PolicyCentreRoute,
+  ReviewHealthRoute: ReviewHealthRoute,
   SettingsRoute: SettingsRoute,
   SystemProcessesRoute: SystemProcessesRoute,
   WorkflowRecorderRoute: WorkflowRecorderRoute,
