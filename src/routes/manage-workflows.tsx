@@ -231,8 +231,6 @@ function NodesTab() {
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-secondary text-foreground ring-1 ring-border">
                 {n.icon ? <span className="text-lg leading-none">{n.icon}</span> : TYPE_ICON[n.type]}
               </span>
-              <div class="min-w-0 flex-1">
-              </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span className="truncate text-sm font-semibold">{n.name}</span>
