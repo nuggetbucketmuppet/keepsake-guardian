@@ -61,8 +61,11 @@ function WorkflowsTab() {
   const workflows = useWorkflows();
   const evaluations = useEvaluations();
   const drills = useDrills();
+  const graph = useGraph();
   const [editing, setEditing] = useState<Workflow | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Workflow | null>(null);
+  const [guides, setGuides] = useState<NodeFallbackGuide[]>([]);
+  useEffect(() => { getAllGuides().then(setGuides); }, []);
 
   const complianceFor = (wf: Workflow): number | null => {
     const e = evaluations.filter((x) => x.workflowId === wf.id).sort((a, b) => b.evaluatedDate.localeCompare(a.evaluatedDate))[0];
@@ -71,6 +74,11 @@ function WorkflowsTab() {
   const drillFor = (wf: Workflow): number | null => {
     const d = drills.filter((x) => x.team === wf.department).sort((a, b) => b.dateRun.localeCompare(a.dateRun))[0];
     return d ? d.readinessScore : null;
+  };
+  // Does this workflow have at least one fallback guide on any of its nodes?
+  const hasGuideFor = (wf: Workflow): boolean => {
+    const nodeIds = new Set(graph.nodes.filter((n) => (n.workflowIds ?? (n.workflowId ? [n.workflowId] : [])).includes(wf.id)).map((n) => n.id));
+    return guides.some((g) => g.nodeId && nodeIds.has(g.nodeId));
   };
 
   if (workflows.length === 0) {
