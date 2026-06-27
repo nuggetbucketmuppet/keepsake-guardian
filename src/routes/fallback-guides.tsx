@@ -48,7 +48,7 @@ function FallbackGuides() {
 
       <h2 className="mb-3 font-display text-lg font-bold">Saved guides ({guides.length})</h2>
       {guides.length === 0 ? (
-        <EmptyState icon={<BookOpen className="h-6 w-6" />} title="No guides yet" message="Select a node above and generate your first fallback guide." />
+        <EmptyState icon={<BookOpen className="h-6 w-6" />} title="No guides yet" description="Select a node above and generate your first fallback guide." />
       ) : (
         <div className="space-y-4">
           {guides.map((g) => <GuideCard key={g.id} guide={g} onDelete={async () => { await deleteGuide(g.id); refresh(); toast.success("Guide deleted."); }} />)}
