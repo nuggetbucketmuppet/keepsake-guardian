@@ -58,68 +58,66 @@ export function WorkflowForm({
   const [questions, setQuestions] = useState<string[]>([]);
   const [answers, setAnswers] = useState<Record<number, string>>({});
 
-  // Examine / autofill
-  const [examining, setExamining] = useState(false);
-  const [autofilling, setAutofilling] = useState(false);
-  const [nodeMatches, setNodeMatches] = useState<NodeMatchSuggestion[]>([]);
-  // per-match decision: "yes" reuses existing node, "no" creates a new node (with optional rename)
-  const [matchDecision, setMatchDecision] = useState<Record<number, "yes" | "no">>({});
-  const [matchNewName, setMatchNewName] = useState<Record<number, string>>({});
-
   const addTagSilently = (name: string, type: NodeType) => {
     setTags((prev) => prev.some((t) => t.name.toLowerCase() === name.toLowerCase()) ? prev : [...prev, { name, type }]);
   };
 
-  const runExamine = async () => {
-    const content = mode === "code" ? code : description;
-    if (!content.trim()) {
-      toast.error("Add a description or code first so we can examine it.");
-      return;
-    }
-    setExamining(true);
+  // ---- Intake chatbot ----
+  const FIRST_MESSAGE =
+    "Hi! I'll help you map this workflow. To start, please describe it in as much detail as you can — which tools, platforms, AI systems, and people are involved, what triggers it, and what happens at each step.";
+  const [chat, setChat] = useState<ChatMessage[]>([{ role: "assistant", content: FIRST_MESSAGE }]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const [synthesising, setSynthesising] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const hasConversed = chat.some((m) => m.role === "user");
+  const lastReady = chat.length > 0 && chat[chat.length - 1].role === "assistant" && /\bREADY\b/.test(chat[chat.length - 1].content);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chat, chatLoading]);
+
+  const sendChat = async () => {
+    const text = chatInput.trim();
+    if (!text || chatLoading) return;
+    const next: ChatMessage[] = [...chat, { role: "user", content: text }];
+    setChat(next);
+    setChatInput("");
+    setChatLoading(true);
     try {
-      const existingNodeNames = graph.nodes.map((n) => n.name);
-      const res = await examineWorkflow({ description: content, existingNodeNames });
-      setQuestions(res.questions);
-      setAnswers({});
-      setNodeMatches(res.nodeMatches);
-      setMatchDecision({});
-      setMatchNewName({});
-      toast.success(`Examined — ${res.questions.length} question(s), ${res.nodeMatches.length} possible shared node(s).`);
+      const reply = await chatWorkflow(next);
+      setChat([...next, { role: "assistant", content: reply || "Could you tell me a bit more?" }]);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Examine failed.");
+      toast.error(err instanceof Error ? err.message : "Chat failed.");
+      setChat(next);
     } finally {
-      setExamining(false);
+      setChatLoading(false);
     }
   };
 
-  const decideMatch = (i: number, decision: "yes" | "no", m: NodeMatchSuggestion) => {
-    setMatchDecision((d) => ({ ...d, [i]: decision }));
-    if (decision === "yes") addTagSilently(m.existingNodeName, m.type);
-  };
-
-  const runAutofill = async () => {
-    const content = mode === "code" ? code : description;
-    if (!content.trim()) {
-      toast.error("Add a description or code first so we can autofill the details.");
+  const generateFromChat = async () => {
+    if (!hasConversed) {
+      toast.error("Chat with the assistant about your workflow first.");
       return;
     }
-    setAutofilling(true);
+    setSynthesising(true);
     try {
-      const res = await autofillWorkflow(content);
+      const res = await synthesiseWorkflow(chat);
+      if (res.description) setDescription(res.description);
       if (res.name && !name) setName(res.name);
       if (DEPARTMENTS.includes(res.department as Department)) setDepartment(res.department as Department);
       if (FREQUENCIES.includes(res.frequency as Frequency)) setFrequency(res.frequency as Frequency);
       if (CLASSIFICATIONS.includes(res.classification as Classification)) setClassification(res.classification as Classification);
       if (["Yes", "Partially", "No"].includes(res.aiPowered)) setAiPowered(res.aiPowered);
       for (const p of res.platforms) addTagSilently(p.name, p.type);
-      toast.success("Workflow details autofilled — review before saving.");
+      toast.success("Workflow description and details generated — review before saving.");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Autofill failed.");
+      toast.error(err instanceof Error ? err.message : "Could not generate the workflow.");
     } finally {
-      setAutofilling(false);
+      setSynthesising(false);
     }
   };
+
 
   const runDetection = async () => {
     const content = mode === "code" ? code : description;
