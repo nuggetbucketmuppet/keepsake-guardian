@@ -8,12 +8,11 @@ import {
   BookOpen,
   CheckCircle2,
   ClipboardList,
-  Clock,
+  GitFork,
   ShieldAlert,
   Zap,
   ArrowRight,
   Radio,
-  Code2,
 } from "lucide-react";
 import { PulseRing } from "@/components/PulseRing";
 import { Card, PageHeader, StatCard } from "@/components/ui-kit";
