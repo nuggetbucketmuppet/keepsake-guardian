@@ -6,8 +6,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, Card, Button, AiLoading, ErrorCard } from "@/components/ui-kit";
-import { parseIntake } from "@/lib/claude";
-import { mergeIntoGraph, NODE_LABELS } from "@/lib/graph";
+import { parseIntake, detectPlatforms } from "@/lib/claude";
+import { mergeIntoGraph, NODE_LABELS, useGraph } from "@/lib/graph";
 import { saveWorkflow, uid } from "@/lib/store";
 import type {
   Department, Frequency, Classification, NodeType, Workflow,
