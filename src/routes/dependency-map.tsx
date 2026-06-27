@@ -1,273 +1,302 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState, useCallback } from "react";
-import ReactFlow, {
-  Background,
-  Controls,
-  MiniMap,
-  Handle,
-  Position,
-  MarkerType,
-  type Node,
-  type Edge,
-  type NodeProps,
-} from "reactflow";
-import "reactflow/dist/style.css";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, AlertTriangle, ShieldAlert, FileWarning, UserX, BookOpen } from "lucide-react";
-import { Card, PageHeader, Button } from "@/components/ui-kit";
+import {
+  X, Box, Square, Plus, Pencil, BookOpen, CheckCircle2, ShieldAlert,
+} from "lucide-react";
+import { toast } from "sonner";
+import { PageHeader, Card, Button } from "@/components/ui-kit";
+import {
+  useGraph, NODE_COLORS, NODE_LABELS, downstreamCount, connectedNodes,
+  addNodeManual, updateNode,
+} from "@/lib/graph";
+import type { GraphNode, NodeType, RiskLevel, DependencyGraph, Department } from "@/lib/types";
 
 export const Route = createFileRoute("/dependency-map")({
   head: () => ({ meta: [{ title: "Dependency Map — KeepSake" }] }),
-  component: DependencyMap,
+  component: DependencyMapPage,
 });
 
-type NodeKind = "process" | "agent" | "human" | "data";
-interface NodeData {
-  label: string;
-  kind: NodeKind;
-  department?: string;
-  highDependency?: boolean;
-  restricted?: boolean;
-  noFallback?: boolean;
-  staleDays?: number;
-  risk?: string;
-}
+const TYPES: NodeType[] = ["ai", "saas", "internal", "human", "external", "unknown"];
+const DEPARTMENTS = ["All", "Finance", "Procurement", "HR", "IT", "Customer Success", "Operations", "Legal", "Marketing", "Others"];
 
-const C = { process: "#6c63ff", agent: "#00e5be", human: "#f1f5f9", data: "#f59e0b" };
-
-function ProcessNode({ data, selected }: NodeProps<NodeData>) {
-  return (
-    <div className={`rounded-lg border-2 bg-card px-4 py-2.5 text-center shadow-lg transition-shadow ${selected ? "ring-2 ring-primary" : ""}`} style={{ borderColor: C.process, minWidth: 150, boxShadow: `0 0 18px -6px ${C.process}` }}>
-      <Handle type="target" position={Position.Top} style={{ background: C.process }} />
-      <div className="text-xs font-semibold text-foreground">{data.label}</div>
-      {data.department && <div className="mt-0.5 text-[10px] text-muted-foreground">{data.department}</div>}
-      <Handle type="source" position={Position.Bottom} style={{ background: C.process }} />
-    </div>
-  );
-}
-function AgentNode({ data, selected }: NodeProps<NodeData>) {
-  return (
-    <div className="relative flex items-center justify-center" style={{ width: 130, height: 110 }}>
-      <Handle type="target" position={Position.Top} style={{ background: C.agent, zIndex: 2 }} />
-      <div
-        className={`flex h-full w-full items-center justify-center bg-card text-center ${selected ? "ring-2 ring-accent" : ""}`}
-        style={{ clipPath: "polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0% 50%)", border: `2px solid ${C.agent}`, boxShadow: `0 0 22px -4px ${C.agent}` }}
-      >
-        <span className="px-3 text-[11px] font-semibold text-accent">{data.label}</span>
-      </div>
-      <Handle type="source" position={Position.Bottom} style={{ background: C.agent, zIndex: 2 }} />
-    </div>
-  );
-}
-function HumanNode({ data, selected }: NodeProps<NodeData>) {
-  return (
-    <div className={`flex items-center justify-center rounded-full border-2 bg-card text-center ${selected ? "ring-2 ring-foreground" : ""}`} style={{ width: 100, height: 100, borderColor: "#f1f5f9" }}>
-      <Handle type="target" position={Position.Top} style={{ background: "#f1f5f9" }} />
-      <span className="px-2 text-[10px] font-semibold text-foreground">{data.label}</span>
-      <Handle type="source" position={Position.Bottom} style={{ background: "#f1f5f9" }} />
-    </div>
-  );
-}
-function DataNode({ data, selected }: NodeProps<NodeData>) {
-  return (
-    <div className={`relative ${selected ? "ring-2 ring-warning" : ""}`} style={{ width: 130 }}>
-      <Handle type="target" position={Position.Top} style={{ background: C.data }} />
-      <div className="bg-card text-center" style={{ border: `2px solid ${C.data}`, borderRadius: "50% / 18px", padding: "14px 10px", boxShadow: `0 0 18px -6px ${C.data}` }}>
-        <span className="text-[11px] font-semibold text-warning">{data.label}</span>
-      </div>
-      <Handle type="source" position={Position.Bottom} style={{ background: C.data }} />
-    </div>
-  );
-}
-
-const nodeTypes = { process: ProcessNode, agent: AgentNode, human: HumanNode, data: DataNode };
-
-// ---- Seed graph ----
-const N = (id: string, kind: NodeKind, label: string, x: number, y: number, extra: Partial<NodeData> = {}): Node<NodeData> => ({
-  id, type: kind, position: { x, y }, data: { label, kind, ...extra },
-});
-
-const seedNodes: Node<NodeData>[] = [
-  N("a1", "agent", "Procurement Bot", 120, 280),
-  N("a2", "agent", "GPT-4o Classifier", 420, 60),
-  N("a3", "agent", "CS Onboarding Bot", 760, 280),
-  N("a4", "agent", "Forecast Engine", 1080, 60),
-  N("p1", "process", "Invoice Approval", 380, 280, { department: "Finance", highDependency: true, noFallback: false, restricted: true, staleDays: 42, risk: "AI auto-approves invoices under $1k with no human review for 42 days." }),
-  N("p2", "process", "Vendor Approval", 80, 460, { department: "Procurement", highDependency: true, noFallback: true, restricted: true, staleDays: 67, risk: "Sole AI handler for restricted vendor data; legal review skipped." }),
-  N("p3", "process", "Customer Onboarding", 720, 460, { department: "Customer Success", highDependency: false, noFallback: false, staleDays: 8 }),
-  N("p4", "process", "Payroll Anomaly Check", 420, 460, { department: "HR", highDependency: false, noFallback: true, restricted: true, staleDays: 19 }),
-  N("p5", "process", "Support Triage", 980, 460, { department: "Customer Success", highDependency: false, noFallback: false, staleDays: 4 }),
-  N("p6", "process", "Contract Review", 1180, 280, { department: "Legal", highDependency: false, noFallback: true, staleDays: 31 }),
-  N("p7", "process", "Access Provisioning", 240, 60, { department: "IT", highDependency: true, noFallback: true, restricted: true, staleDays: 73, risk: "Auto-grants access for standard roles without manager confirmation." }),
-  N("p8", "process", "Demand Forecasting", 1080, 280, { department: "Operations", highDependency: false, noFallback: true, staleDays: 12 }),
-  N("h1", "human", "Finance Manager", 380, 680),
-  N("h2", "human", "CS Team", 820, 680),
-  N("h3", "human", "IT Admin", 120, 680),
-  N("d1", "data", "NetSuite ERP", 580, 280),
-  N("d2", "data", "Vendor Master", 80, 100),
-  N("d3", "data", "Customer DB", 760, 100),
-  N("d4", "data", "Payroll Ledger", 600, 460),
-  N("d5", "data", "Identity Directory", 40, 280),
-];
-
-const E = (s: string, t: string, color: string, label?: string): Edge => ({
-  id: `${s}-${t}`, source: s, target: t, animated: true, label,
-  style: { stroke: color, strokeWidth: 2 },
-  labelStyle: { fill: "#8b93a7", fontSize: 10 },
-  labelBgStyle: { fill: "#1a1d27" },
-  markerEnd: { type: MarkerType.ArrowClosed, color },
-});
-const TEAL = "#00e5be", AMBER = "#f59e0b", RED = "#ef4444";
-
-const seedEdges: Edge[] = [
-  E("a1", "p2", RED), E("d2", "a1", TEAL), E("a2", "p1", RED), E("d1", "a2", TEAL),
-  E("p1", "h1", AMBER), E("a3", "p3", TEAL), E("d3", "a3", TEAL), E("p3", "h2", AMBER),
-  E("a2", "p4", AMBER), E("d4", "a2", TEAL), E("a3", "p5", TEAL), E("a4", "p8", AMBER),
-  E("d1", "a4", TEAL), E("a2", "p6", RED), E("a1", "p7", RED), E("d5", "a1", TEAL),
-  E("p7", "h3", RED), E("p2", "h1", RED),
-];
-
-function DependencyMap() {
+function DependencyMapPage() {
   const navigate = useNavigate();
+  const graph = useGraph();
+  const [is3d, setIs3d] = useState(true);
+  const [typeFilter, setTypeFilter] = useState<NodeType[]>([]);
   const [dept, setDept] = useState("All");
-  const [highOnly, setHighOnly] = useState(false);
-  const [restrictedOnly, setRestrictedOnly] = useState(false);
-  const [selected, setSelected] = useState<Node<NodeData> | null>(null);
-
-  const departments = ["All", "Finance", "Procurement", "HR", "IT", "Customer Success", "Operations", "Legal"];
+  const [risk, setRisk] = useState<"All" | RiskLevel>("All");
+  const [noGuideOnly, setNoGuideOnly] = useState(false);
+  const [criticalOnly, setCriticalOnly] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [selected, setSelected] = useState<GraphNode | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
 
   const visibleNodes = useMemo(() => {
-    return seedNodes.map((n) => {
-      let dim = false;
-      if (n.data.kind === "process") {
-        if (dept !== "All" && n.data.department !== dept) dim = true;
-        if (highOnly && !n.data.highDependency) dim = true;
-        if (restrictedOnly && !n.data.restricted) dim = true;
-      }
-      return { ...n, style: { ...n.style, opacity: dim ? 0.18 : 1 } };
+    return graph.nodes.filter((n) => {
+      if (typeFilter.length && !typeFilter.includes(n.type)) return false;
+      if (dept !== "All" && n.department !== dept) return false;
+      if (risk !== "All" && n.riskLevel !== risk) return false;
+      if (noGuideOnly && n.hasGuide) return false;
+      if (criticalOnly && n.riskLevel !== "high") return false;
+      return true;
     });
-  }, [dept, highOnly, restrictedOnly]);
+  }, [graph, typeFilter, dept, risk, noGuideOnly, criticalOnly]);
 
-  const onNodeClick = useCallback((_: unknown, node: Node<NodeData>) => setSelected(node), []);
-
-  const fullAi = seedNodes.filter((n) => n.data.kind === "process" && n.data.highDependency);
-  const restrictedAi = seedNodes.filter((n) => n.data.kind === "process" && n.data.restricted);
-  const noGuide = seedNodes.filter((n) => n.data.kind === "process" && n.data.noFallback);
-  const stale = seedNodes.filter((n) => n.data.kind === "process" && (n.data.staleDays ?? 0) >= 30);
+  const selConn = selected ? connectedNodes(graph, selected.id) : null;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <PageHeader title="AI Dependency Map" subtitle="Visualise which processes depend on AI and where your organisation is most exposed." />
+      <PageHeader
+        title="Dependency Map"
+        subtitle="Every tool your business depends on, AI or not. Larger nodes have more downstream dependencies — your single points of failure."
+        right={
+          <div className="inline-flex shrink-0 gap-1 rounded-md border border-border bg-card p-1">
+            <button onClick={() => setIs3d(true)} className={`inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-semibold ${is3d ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}><Box className="h-3.5 w-3.5" /> 3D</button>
+            <button onClick={() => setIs3d(false)} className={`inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-semibold ${!is3d ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}><Square className="h-3.5 w-3.5" /> 2D</button>
+          </div>
+        }
+      />
+
+      {/* Manager controls */}
+      <Card hover={false} className="mb-4 overflow-hidden p-4">
+        <div className="flex flex-wrap items-center gap-2">
+          {TYPES.map((t) => {
+            const on = typeFilter.includes(t);
+            return (
+              <button key={t} onClick={() => setTypeFilter(on ? typeFilter.filter((x) => x !== t) : [...typeFilter, t])}
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors ${on ? "border-transparent text-background" : "border-border text-muted-foreground"}`}
+                style={on ? { background: NODE_COLORS[t] } : undefined}>
+                <span className="h-2 w-2 rounded-full" style={{ background: NODE_COLORS[t] }} /> {NODE_LABELS[t]}
+              </button>
+            );
+          })}
+          <span className="mx-1 h-5 w-px bg-border" />
+          <select value={dept} onChange={(e) => setDept(e.target.value)} className="shrink-0 rounded-md border border-input bg-secondary/60 px-2 py-1 text-xs">
+            {DEPARTMENTS.map((d) => <option key={d}>{d}</option>)}
+          </select>
+          <select value={risk} onChange={(e) => setRisk(e.target.value as RiskLevel | "All")} className="shrink-0 rounded-md border border-input bg-secondary/60 px-2 py-1 text-xs">
+            {["All", "high", "medium", "low"].map((r) => <option key={r} value={r}>{r === "All" ? "All risk" : `${r} risk`}</option>)}
+          </select>
+          <ChipToggle label="No fallback guide" active={noGuideOnly} onClick={() => setNoGuideOnly((v) => !v)} />
+          <ChipToggle label="Critical paths only" active={criticalOnly} onClick={() => setCriticalOnly((v) => !v)} />
+          <span className="mx-1 h-5 w-px bg-border" />
+          <Button variant="outline" className="shrink-0 px-2.5 py-1 text-xs" onClick={() => setShowAdd(true)}><Plus className="h-3.5 w-3.5" /> Add Node</Button>
+          <Button variant={editMode ? "accent" : "outline"} className="shrink-0 px-2.5 py-1 text-xs" onClick={() => setEditMode((v) => !v)}><Pencil className="h-3.5 w-3.5" /> Edit Mode{editMode ? " (on)" : ""}</Button>
+        </div>
+      </Card>
 
       <div className="relative">
-        <Card hover={false} className="overflow-hidden p-0" >
-          <div className="h-[600px] w-full bg-grid">
-            <ReactFlow
-              nodes={visibleNodes}
-              edges={seedEdges}
-              nodeTypes={nodeTypes}
-              onNodeClick={onNodeClick}
-              fitView
-              minZoom={0.2}
-              proOptions={{ hideAttribution: true }}
-            >
-              <Background color="#2a2f3d" gap={24} />
-              <Controls className="!border-border !bg-card [&>button]:!border-border [&>button]:!bg-secondary [&>button]:!fill-foreground" />
-              <MiniMap pannable zoomable nodeColor={(n) => C[(n.data as NodeData).kind]} maskColor="rgba(15,17,23,0.7)" style={{ background: "#14161f", border: "1px solid #2a2f3d" }} />
-            </ReactFlow>
-          </div>
-        </Card>
-
-        {/* Filter overlay */}
-        <Card hover={false} className="absolute right-4 top-4 z-10 w-60 p-4">
-          <h4 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Filters</h4>
-          <label className="mb-1 block text-[11px] text-muted-foreground">Department</label>
-          <select value={dept} onChange={(e) => setDept(e.target.value)} className="mb-3 w-full rounded-md border border-input bg-secondary/60 px-2 py-1.5 text-sm">
-            {departments.map((d) => <option key={d}>{d}</option>)}
-          </select>
-          <Toggle label="High-dependency only" checked={highOnly} onChange={setHighOnly} />
-          <Toggle label="Restricted data only" checked={restrictedOnly} onChange={setRestrictedOnly} />
-          <div className="mt-3 space-y-1.5 border-t border-border pt-3 text-[11px] text-muted-foreground">
-            <Legend color={TEAL} text="AI autonomous" />
-            <Legend color={AMBER} text="Human oversight" />
-            <Legend color={RED} text="AI sole handler" />
+        <Card hover={false} className="overflow-hidden p-0">
+          <div className="relative h-[600px] w-full bg-[#0b0d13]">
+            <ClientGraph graph={graph} visibleNodes={visibleNodes} is3d={is3d} editMode={editMode} onSelect={setSelected} />
+            {/* Legend */}
+            <div className="pointer-events-none absolute left-4 top-4 rounded-lg border border-border bg-card/90 p-3 text-xs backdrop-blur">
+              <div className="mb-1.5 font-semibold uppercase tracking-wide text-muted-foreground">Node types</div>
+              {TYPES.map((t) => (
+                <div key={t} className="flex items-center gap-2 py-0.5">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: NODE_COLORS[t] }} /> {NODE_LABELS[t]}
+                </div>
+              ))}
+            </div>
           </div>
         </Card>
 
         {/* Drawer */}
         <AnimatePresence>
-          {selected && (
-            <motion.div initial={{ x: 360 }} animate={{ x: 0 }} exit={{ x: 360 }} transition={{ type: "spring", damping: 26, stiffness: 240 }} className="absolute right-0 top-0 z-20 h-full w-80 border-l border-border bg-card p-5 shadow-2xl">
+          {selected && selConn && (
+            <motion.div initial={{ x: 360 }} animate={{ x: 0 }} exit={{ x: 360 }} transition={{ type: "spring", damping: 26, stiffness: 240 }}
+              className="absolute right-0 top-0 z-20 h-full w-80 overflow-y-auto border-l border-border bg-card p-5 shadow-2xl">
               <div className="mb-4 flex items-start justify-between">
                 <div>
-                  <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: C[selected.data.kind] }}>{selected.data.kind} node</span>
-                  <h3 className="font-display text-lg font-bold">{selected.data.label}</h3>
+                  <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: NODE_COLORS[selected.type] }}>{NODE_LABELS[selected.type]}</span>
+                  <h3 className="font-display text-lg font-bold">{selected.name}</h3>
                 </div>
                 <button onClick={() => setSelected(null)} className="rounded-md p-1.5 hover:bg-secondary"><X className="h-4 w-4" /></button>
               </div>
-              {selected.data.department && <Field label="Department" value={selected.data.department} />}
-              {selected.data.staleDays !== undefined && <Field label="Days since human touch" value={`${selected.data.staleDays} days`} />}
-              <div className="mb-3">
-                <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Connected nodes</div>
-                <div className="flex flex-wrap gap-1.5">
-                  {seedEdges.filter((e) => e.source === selected.id || e.target === selected.id).map((e) => {
-                    const otherId = e.source === selected.id ? e.target : e.source;
-                    const other = seedNodes.find((n) => n.id === otherId);
-                    return <span key={e.id} className="rounded-md border border-border bg-secondary/60 px-2 py-0.5 text-xs">{other?.data.label}</span>;
-                  })}
-                </div>
+              <Field label="Department" value={selected.department ?? "—"} />
+              <Field label="Risk level" value={selected.riskLevel} />
+              <Field label="Downstream dependencies" value={String(downstreamCount(graph, selected.id))} />
+              <Field label="Fallback guide" value={selected.hasGuide ? "Exists" : "Not yet created"} />
+              {selected.reviewedAt && <Field label="Last reviewed" value={new Date(selected.reviewedAt).toLocaleDateString()} />}
+
+              <Connected title="Upstream" nodes={selConn.upstream} />
+              <Connected title="Downstream" nodes={selConn.downstream} />
+
+              <div className="mt-4 space-y-2">
+                <Button variant="accent" className="w-full" onClick={() => navigate({ to: "/fallback-guides", search: { node: selected.id } as never })}>
+                  <BookOpen className="h-4 w-4" /> Generate Fallback Guide
+                </Button>
+                <Button variant="outline" className="w-full" onClick={() => { updateNode(selected.id, { reviewedAt: new Date().toISOString() }); toast.success("Marked as reviewed."); setSelected({ ...selected, reviewedAt: new Date().toISOString() }); }}>
+                  <CheckCircle2 className="h-4 w-4" /> Mark as Updated
+                </Button>
               </div>
-              <div className="mb-4 rounded-md border border-danger/30 bg-danger/10 p-3">
-                <div className="flex items-center gap-1.5 text-danger"><AlertTriangle className="h-3.5 w-3.5" /><span className="text-xs font-bold">Risk assessment</span></div>
-                <p className="mt-1 text-xs text-muted-foreground">{selected.data.risk ?? (selected.data.highDependency ? "High AI dependency with limited human oversight." : "Moderate exposure; monitor for drift.")}</p>
-              </div>
-              {selected.data.kind === "process" && (
-                <Button variant="accent" className="w-full" onClick={() => navigate({ to: "/fallback-guides" })}><BookOpen className="h-4 w-4" /> Generate Fallback Guide</Button>
-              )}
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Risk summary cards */}
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <RiskCard icon={<ShieldAlert className="h-5 w-5" />} tone="danger" title="100% AI dependency" nodes={fullAi} />
-        <RiskCard icon={<FileWarning className="h-5 w-5" />} tone="danger" title="Restricted data via AI" nodes={restrictedAi} />
-        <RiskCard icon={<BookOpen className="h-5 w-5" />} tone="warning" title="No fallback guide" nodes={noGuide} />
-        <RiskCard icon={<UserX className="h-5 w-5" />} tone="warning" title="No human touch 30+ days" nodes={stale} />
+      {/* Risk summary */}
+      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <SummaryCard title="High-risk nodes" count={graph.nodes.filter((n) => n.riskLevel === "high").length} tone="danger" icon={<ShieldAlert className="h-5 w-5" />} />
+        <SummaryCard title="Without a fallback guide" count={graph.nodes.filter((n) => !n.hasGuide).length} tone="warning" icon={<BookOpen className="h-5 w-5" />} />
+        <SummaryCard title="Total mapped nodes" count={graph.nodes.length} tone="accent" icon={<Box className="h-5 w-5" />} />
       </div>
+
+      {showAdd && <AddNodeModal onClose={() => setShowAdd(false)} />}
     </div>
   );
 }
 
-function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+// ---- Client-only force graph ----
+function ClientGraph({ graph, visibleNodes, is3d, editMode, onSelect }: {
+  graph: DependencyGraph; visibleNodes: GraphNode[]; is3d: boolean; editMode: boolean; onSelect: (n: GraphNode) => void;
+}) {
+  const [mods, setMods] = useState<{ FG3D: any; FG2D: any } | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
+  const [dims, setDims] = useState({ w: 800, h: 600 });
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([import("react-force-graph-3d"), import("react-force-graph-2d")]).then(([a, b]) => {
+      if (active) setMods({ FG3D: a.default, FG2D: b.default });
+    });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setDims({ w: el.clientWidth, h: el.clientHeight }));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const data = useMemo(() => {
+    const ids = new Set(visibleNodes.map((n) => n.id));
+    const nodeById = new Map(graph.nodes.map((n) => [n.id, n]));
+    return {
+      nodes: visibleNodes.map((n) => ({
+        id: n.id, name: n.name, type: n.type,
+        color: NODE_COLORS[n.type],
+        val: 2 + downstreamCount(graph, n.id) * 2,
+        _node: n,
+      })),
+      links: graph.edges.filter((e) => ids.has(e.source) && ids.has(e.target)).map((e) => {
+        const src = nodeById.get(e.source);
+        const color = src?.hasGuide ? "#22c55e" : src?.riskLevel === "high" ? "#ef4444" : "#f59e0b";
+        return { source: e.source, target: e.target, color };
+      }),
+    };
+  }, [graph, visibleNodes]);
+
+  if (!mods) {
+    return <div ref={ref} className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">Loading map…</div>;
+  }
+  const { FG3D, FG2D } = mods;
+  const common = {
+    graphData: data,
+    width: dims.w,
+    height: dims.h,
+    backgroundColor: "#0b0d13",
+    nodeLabel: "name",
+    nodeColor: (n: any) => n.color,
+    nodeVal: (n: any) => n.val,
+    linkColor: (l: any) => l.color,
+    linkWidth: 1.5,
+    linkDirectionalParticles: 2,
+    linkDirectionalParticleWidth: 2,
+    onNodeClick: (n: any) => onSelect(n._node),
+    enableNodeDrag: editMode,
+  };
+
   return (
-    <label className="mb-2 flex cursor-pointer items-center justify-between">
-      <span className="text-xs">{label}</span>
-      <button type="button" onClick={() => onChange(!checked)} className={`relative h-5 w-9 rounded-full transition-colors ${checked ? "bg-primary" : "bg-secondary"}`}>
-        <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${checked ? "translate-x-4" : "translate-x-0.5"}`} />
-      </button>
-    </label>
+    <div ref={ref} className="h-full w-full">
+      {is3d ? (
+        <FG3D {...common} nodeOpacity={0.95} />
+      ) : (
+        <FG2D {...common}
+          nodeCanvasObject={(node: any, ctx: CanvasRenderingContext2D, scale: number) => {
+            const r = Math.sqrt(node.val) * 1.8;
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, r, 0, 2 * Math.PI);
+            ctx.fillStyle = node.color;
+            ctx.fill();
+            const fs = 11 / scale;
+            ctx.font = `${fs}px Inter, sans-serif`;
+            ctx.fillStyle = "#c7ccd9";
+            ctx.textAlign = "center";
+            ctx.fillText(node.name, node.x, node.y + r + fs + 1);
+          }}
+        />
+      )}
+    </div>
   );
 }
-function Legend({ color, text }: { color: string; text: string }) {
-  return <div className="flex items-center gap-2"><span className="h-0.5 w-5" style={{ background: color }} />{text}</div>;
+
+function ChipToggle({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button onClick={onClick} className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors ${active ? "border-primary bg-primary/15 text-primary" : "border-border text-muted-foreground"}`}>{label}</button>
+  );
 }
 function Field({ label, value }: { label: string; value: string }) {
-  return <div className="mb-3"><div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</div><div className="text-sm">{value}</div></div>;
+  return <div className="mb-3"><div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</div><div className="text-sm capitalize">{value}</div></div>;
 }
-function RiskCard({ icon, tone, title, nodes }: { icon: React.ReactNode; tone: "danger" | "warning"; title: string; nodes: Node<NodeData>[] }) {
-  const color = tone === "danger" ? "text-danger" : "text-warning";
-  const border = tone === "danger" ? "border-danger/40" : "border-warning/40";
+function Connected({ title, nodes }: { title: string; nodes: GraphNode[] }) {
   return (
-    <Card hover={false} className={`p-4 ${border}`}>
+    <div className="mb-3">
+      <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{title} ({nodes.length})</div>
+      <div className="flex flex-wrap gap-1.5">
+        {nodes.length === 0 ? <span className="text-xs text-muted-foreground">None</span> : nodes.map((n) => (
+          <span key={n.id} className="rounded-md border border-border bg-secondary/60 px-2 py-0.5 text-xs">{n.name}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+function SummaryCard({ title, count, tone, icon }: { title: string; count: number; tone: "danger" | "warning" | "accent"; icon: React.ReactNode }) {
+  const color = tone === "danger" ? "text-danger" : tone === "warning" ? "text-warning" : "text-accent";
+  return (
+    <Card hover={false} className="overflow-hidden p-4">
       <div className={`flex items-center justify-between ${color}`}>
         <span className="flex items-center gap-2 text-sm font-bold">{icon}{title}</span>
-        <span className="font-display text-2xl font-bold">{nodes.length}</span>
+        <span className="font-display text-2xl font-bold">{count}</span>
       </div>
-      <ul className="mt-2 space-y-0.5 text-xs text-muted-foreground">
-        {nodes.slice(0, 4).map((n) => <li key={n.id}>· {n.data.label}</li>)}
-      </ul>
     </Card>
+  );
+}
+
+function AddNodeModal({ onClose }: { onClose: () => void }) {
+  const [name, setName] = useState("");
+  const [type, setType] = useState<NodeType>("saas");
+  const [department, setDepartment] = useState<Department>("Operations");
+  const [riskLevel, setRiskLevel] = useState<RiskLevel>("medium");
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <Card hover={false} className="w-full max-w-md overflow-hidden p-5" >
+        <div onClick={(e) => e.stopPropagation()}>
+          <h3 className="mb-4 font-display text-lg font-bold">Add a node manually</h3>
+          <div className="space-y-3">
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Node name (e.g. Slack)" className="w-full rounded-md border border-input bg-secondary/40 px-3 py-2 text-sm" />
+            <select value={type} onChange={(e) => setType(e.target.value as NodeType)} className="w-full rounded-md border border-input bg-secondary/40 px-3 py-2 text-sm">
+              {TYPES.map((t) => <option key={t} value={t}>{NODE_LABELS[t]}</option>)}
+            </select>
+            <div className="grid grid-cols-2 gap-3">
+              <select value={department} onChange={(e) => setDepartment(e.target.value as Department)} className="w-full rounded-md border border-input bg-secondary/40 px-3 py-2 text-sm">
+                {DEPARTMENTS.filter((d) => d !== "All").map((d) => <option key={d}>{d}</option>)}
+              </select>
+              <select value={riskLevel} onChange={(e) => setRiskLevel(e.target.value as RiskLevel)} className="w-full rounded-md border border-input bg-secondary/40 px-3 py-2 text-sm">
+                {(["high", "medium", "low"] as RiskLevel[]).map((r) => <option key={r}>{r}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button variant="ghost" onClick={onClose}>Cancel</Button>
+            <Button onClick={() => { if (!name.trim()) { toast.error("Name required"); return; } addNodeManual({ name, type, department, riskLevel }); toast.success("Node added."); onClose(); }}>Add Node</Button>
+          </div>
+        </div>
+      </Card>
+    </div>
   );
 }
