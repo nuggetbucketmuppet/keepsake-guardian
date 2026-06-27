@@ -12,6 +12,14 @@ const subscribe = (l: Listener) => {
   return () => listeners.delete(l);
 };
 
+// Map any legacy/raw node type to the 3 allowed kinds.
+export function normalizeNodeType(raw: string | undefined): NodeType {
+  const v = (raw ?? "").toLowerCase();
+  if (v === "ai") return "ai";
+  if (v === "human") return "human";
+  return "platform"; // saas, internal, external, unknown, service, app, etc.
+}
+
 // ---- Seed graph (always present on first load) ----
 const N = (name: string, type: NodeType, department: GraphNode["department"], riskLevel: RiskLevel, hasGuide = false): GraphNode => ({
   id: uid(),
@@ -22,35 +30,35 @@ const N = (name: string, type: NodeType, department: GraphNode["department"], ri
   hasGuide,
 });
 
-const shopify = N("Shopify", "saas", "Operations", "high");
-const mailchimp = N("Mailchimp", "saas", "Marketing", "medium");
-const sheets = N("Google Sheets", "saas", "Operations", "medium", true);
-const stockCheck = N("Morning Stock Check (Staff)", "human", "Operations", "high");
+const shopify = N("Shopify", "platform", "Operations", "high");
+const mailchimp = N("Mailchimp", "platform", "Marketing", "medium");
+const sheets = N("Google Sheets", "platform", "Operations", "medium", true);
+const stockCheck = N("Inventory Officer", "human", "Operations", "high");
 const classifier = N("GPT-4o Order Classifier", "ai", "Operations", "high");
-const netsuite = N("NetSuite ERP", "internal", "Finance", "high", true);
+const netsuite = N("NetSuite ERP", "platform", "Finance", "high", true);
 const invoiceBot = N("Invoice Approval Bot", "ai", "Finance", "high");
 const financeMgr = N("Finance Manager", "human", "Finance", "medium");
 const csBot = N("CS Onboarding Bot", "ai", "Customer Success", "medium", true);
-const customerDb = N("Customer DB", "internal", "Customer Success", "medium");
-const twilio = N("Twilio SMS", "external", "Customer Success", "low");
+const customerDb = N("Customer DB", "platform", "Customer Success", "medium");
+const twilio = N("Twilio SMS", "platform", "Customer Success", "low");
 
 const seedNodes: GraphNode[] = [
   shopify, mailchimp, sheets, stockCheck, classifier,
   netsuite, invoiceBot, financeMgr, csBot, customerDb, twilio,
 ];
 
-const E = (s: GraphNode, t: GraphNode, label?: string): GraphEdge => ({
-  id: uid(), source: s.id, target: t.id, label,
+const E = (s: GraphNode, t: GraphNode, label?: string, steps?: string[]): GraphEdge => ({
+  id: uid(), source: s.id, target: t.id, label, steps,
 });
 
 const seedEdges: GraphEdge[] = [
   E(shopify, classifier, "new order"),
   E(classifier, mailchimp, "trigger email"),
   E(classifier, sheets, "update inventory"),
-  E(sheets, stockCheck, "manual review"),
+  E(sheets, stockCheck, "manual review", ["Open the inventory sheet", "Cross-check stock counts", "Flag discrepancies"]),
   E(shopify, netsuite, "sync revenue"),
   E(netsuite, invoiceBot, "invoice data"),
-  E(invoiceBot, financeMgr, "approval"),
+  E(invoiceBot, financeMgr, "approval", ["Review flagged invoices", "Approve or reject", "Log decision"]),
   E(customerDb, csBot, "profile"),
   E(csBot, twilio, "welcome SMS"),
 ];
