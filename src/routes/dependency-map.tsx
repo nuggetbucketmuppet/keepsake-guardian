@@ -204,22 +204,15 @@ function ClientGraph({ graph, visibleNodes, is3d, editMode, onSelect, onSelectEd
   graph: DependencyGraph; visibleNodes: GraphNode[]; is3d: boolean; editMode: boolean;
   onSelect: (n: GraphNode) => void; onSelectEdge: (e: GraphEdge) => void;
 }) {
-  const [mods, setMods] = useState<{ FG3D: any; FG2D: any } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const [dims, setDims] = useState({ w: 800, h: 600 });
 
   useEffect(() => {
-    let active = true;
-    Promise.all([import("react-force-graph-3d"), import("react-force-graph-2d")]).then(([a, b]) => {
-      if (active) setMods({ FG3D: a.default, FG2D: b.default });
-    });
-    return () => { active = false; };
-  }, []);
-
-  useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => setDims({ w: el.clientWidth, h: el.clientHeight }));
+    const update = () => setDims({ w: el.clientWidth || 800, h: el.clientHeight || 600 });
+    update();
+    const ro = new ResizeObserver(update);
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
@@ -227,65 +220,106 @@ function ClientGraph({ graph, visibleNodes, is3d, editMode, onSelect, onSelectEd
   const data = useMemo(() => {
     const ids = new Set(visibleNodes.map((n) => n.id));
     const nodeById = new Map(graph.nodes.map((n) => [n.id, n]));
+    const groups = new Map<NodeType, GraphNode[]>();
+    visibleNodes.forEach((node) => {
+      const list = groups.get(node.type) ?? [];
+      list.push(node);
+      groups.set(node.type, list);
+    });
+
+    const lanes: Record<NodeType, number> = { ai: 0.28, platform: 0.5, human: 0.72 };
+    const positions = new Map<string, { x: number; y: number; z: number; r: number; node: GraphNode }>();
+    TYPES.forEach((type) => {
+      const nodes = groups.get(type) ?? [];
+      const spacing = dims.w / (nodes.length + 1 || 2);
+      nodes.forEach((node, index) => {
+        const downstream = downstreamCount(graph, node.id);
+        const x = spacing * (index + 1);
+        const y = dims.h * lanes[type] + Math.sin(index * 1.7 + type.length) * 34;
+        const z = Math.min(80, downstream * 9 + (type === "ai" ? 28 : type === "platform" ? 12 : 0));
+        const r = Math.max(8, Math.min(24, Math.sqrt(nodeSize(graph, node)) * 2.2));
+        positions.set(node.id, { x, y, z, r, node });
+      });
+    });
+
     return {
-      nodes: visibleNodes.map((n) => ({
-        id: n.id, name: n.name, type: n.type,
-        color: NODE_COLORS[n.type],
-        val: nodeSize(graph, n),
-        _node: n,
-      })),
+      nodes: Array.from(positions.values()),
       links: graph.edges.filter((e) => ids.has(e.source) && ids.has(e.target)).map((e) => {
         const src = nodeById.get(e.source);
         const color = src?.hasGuide ? "#22c55e" : src?.riskLevel === "high" ? "#ef4444" : "#f59e0b";
         const steps = e.steps ?? (e.label ? [e.label] : []);
-        return { source: e.source, target: e.target, color, _edge: e, steps, stepCount: steps.length };
+        return { source: e.source, target: e.target, color, edge: e, steps, stepCount: steps.length, from: positions.get(e.source), to: positions.get(e.target) };
       }),
     };
-  }, [graph, visibleNodes]);
+  }, [dims.h, dims.w, graph, visibleNodes]);
 
-  if (!mods) {
-    return <div ref={ref} className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">Loading map…</div>;
-  }
-  const { FG3D, FG2D } = mods;
-  const common = {
-    graphData: data,
-    width: dims.w,
-    height: dims.h,
-    backgroundColor: "#0b0d13",
-    nodeLabel: "name",
-    nodeColor: (n: any) => n.color,
-    nodeVal: (n: any) => n.val,
-    linkColor: (l: any) => l.color,
-    // thicker tube + one travelling particle per step so multi-steps read as distinct segments
-    linkWidth: (l: any) => 1.5 + l.stepCount,
-    linkDirectionalParticles: (l: any) => Math.max(1, l.stepCount),
-    linkDirectionalParticleWidth: 2.5,
-    linkLabel: (l: any) => (l.steps.length ? l.steps.map((s: string, i: number) => `${i + 1}. ${s}`).join(" → ") : ""),
-    onNodeClick: (n: any) => onSelect(n._node),
-    onLinkClick: (l: any) => onSelectEdge(l._edge),
-    enableNodeDrag: editMode,
+  const project = (p: { x: number; y: number; z: number }) => {
+    if (!is3d) return { x: p.x, y: p.y };
+    return { x: p.x + p.z * 0.45, y: p.y - p.z * 0.32 };
   };
 
   return (
-    <div ref={ref} className="h-full w-full">
-      {is3d ? (
-        <FG3D {...common} nodeOpacity={0.95} />
-      ) : (
-        <FG2D {...common}
-          nodeCanvasObject={(node: any, ctx: CanvasRenderingContext2D, scale: number) => {
-            const r = Math.sqrt(node.val) * 1.8;
-            ctx.beginPath();
-            ctx.arc(node.x, node.y, r, 0, 2 * Math.PI);
-            ctx.fillStyle = node.color;
-            ctx.fill();
-            const fs = 11 / scale;
-            ctx.font = `${fs}px Inter, sans-serif`;
-            ctx.fillStyle = "#c7ccd9";
-            ctx.textAlign = "center";
-            ctx.fillText(node.name, node.x, node.y + r + fs + 1);
-          }}
-        />
-      )}
+    <div ref={ref} className="relative h-full w-full">
+      <svg role="img" aria-label="Dependency graph" width="100%" height="100%" viewBox={`0 0 ${dims.w} ${dims.h}`} className="block h-full w-full">
+        <defs>
+          <filter id="nodeGlow" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="4" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+          <pattern id="mapGrid" width="42" height="42" patternUnits="userSpaceOnUse">
+            <path d="M 42 0 L 0 0 0 42" fill="none" stroke="rgba(58,209,126,0.08)" strokeWidth="1" />
+          </pattern>
+        </defs>
+        <rect width={dims.w} height={dims.h} fill="#0b0d13" />
+        <rect width={dims.w} height={dims.h} fill="url(#mapGrid)" />
+
+        {is3d && data.links.map((link) => {
+          if (!link.from || !link.to) return null;
+          const from = project(link.from);
+          const to = project(link.to);
+          return <line key={`${link.edge.id ?? `${link.edge.source}-${link.edge.target}`}-shadow`} x1={from.x - 18} y1={from.y + 18} x2={to.x - 18} y2={to.y + 18} stroke="rgba(0,0,0,0.45)" strokeWidth={3 + link.stepCount} />;
+        })}
+
+        {data.links.map((link) => {
+          if (!link.from || !link.to) return null;
+          const from = project(link.from);
+          const to = project(link.to);
+          return (
+            <g key={link.edge.id ?? `${link.edge.source}-${link.edge.target}`} className="cursor-pointer" onClick={() => onSelectEdge(link.edge)}>
+              <line x1={from.x} y1={from.y} x2={to.x} y2={to.y} stroke={link.color} strokeOpacity={0.72} strokeWidth={1.6 + link.stepCount} />
+              <line x1={from.x} y1={from.y} x2={to.x} y2={to.y} stroke="transparent" strokeWidth={14} />
+              {link.stepCount > 0 && <circle cx={(from.x + to.x) / 2} cy={(from.y + to.y) / 2} r={4 + Math.min(link.stepCount, 4)} fill={link.color} opacity={0.9} />}
+              <title>{link.steps.length ? link.steps.map((s, i) => `${i + 1}. ${s}`).join(" → ") : "Dependency"}</title>
+            </g>
+          );
+        })}
+
+        {is3d && data.nodes.map((item) => {
+          const p = project(item);
+          return <line key={`${item.node.id}-stem`} x1={item.x} y1={item.y} x2={p.x} y2={p.y} stroke="rgba(199,204,217,0.18)" strokeWidth={1} strokeDasharray="3 5" />;
+        })}
+
+        {data.nodes.map((item) => {
+          const p = project(item);
+          const color = NODE_COLORS[item.node.type];
+          return (
+            <g key={item.node.id} className="cursor-pointer" onClick={() => onSelect(item.node)}>
+              <circle cx={p.x} cy={p.y} r={item.r + 5} fill={color} opacity={0.1} filter="url(#nodeGlow)" />
+              <circle cx={p.x} cy={p.y} r={item.r} fill={color} stroke="rgba(255,255,255,0.72)" strokeWidth={1.2} />
+              <circle cx={p.x - item.r * 0.28} cy={p.y - item.r * 0.32} r={Math.max(2, item.r * 0.22)} fill="rgba(255,255,255,0.72)" />
+              <text x={p.x} y={p.y + item.r + 16} textAnchor="middle" fill="#c7ccd9" fontSize="11" fontFamily="Barlow, sans-serif" fontWeight="600">
+                {item.node.name.length > 22 ? `${item.node.name.slice(0, 21)}…` : item.node.name}
+              </text>
+              <title>{item.node.name}</title>
+            </g>
+          );
+        })}
+
+        {data.nodes.length === 0 && (
+          <text x={dims.w / 2} y={dims.h / 2} textAnchor="middle" fill="#8b93a7" fontSize="14" fontFamily="Barlow, sans-serif">No nodes match the current filters.</text>
+        )}
+      </svg>
+      {editMode && <div className="pointer-events-none absolute bottom-4 left-4 rounded border border-border bg-card/90 px-3 py-1.5 text-xs text-muted-foreground">Edit mode is on. Select a node to update details.</div>}
     </div>
   );
 }
