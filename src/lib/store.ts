@@ -9,6 +9,7 @@ const KEYS = {
   policies: "keepsake.policies",
   evaluations: "keepsake.evaluations",
   org: "keepsake.org",
+  settings: "keepsake.settings",
 } as const;
 
 type Listener = () => void;
