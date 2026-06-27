@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorkflowRecorderRouteImport } from './routes/workflow-recorder'
 import { Route as SystemProcessesRouteImport } from './routes/system-processes'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as PolicyCentreRouteImport } from './routes/policy-centre'
 import { Route as KnowledgeDecayRouteImport } from './routes/knowledge-decay'
 import { Route as FallbackGuidesRouteImport } from './routes/fallback-guides'
 import { Route as FailureDrillsRouteImport } from './routes/failure-drills'
@@ -35,6 +36,11 @@ const SystemProcessesRoute = SystemProcessesRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PolicyCentreRoute = PolicyCentreRouteImport.update({
+  id: '/policy-centre',
+  path: '/policy-centre',
   getParentRoute: () => rootRouteImport,
 } as any)
 const KnowledgeDecayRoute = KnowledgeDecayRouteImport.update({
@@ -89,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/failure-drills': typeof FailureDrillsRoute
   '/fallback-guides': typeof FallbackGuidesRoute
   '/knowledge-decay': typeof KnowledgeDecayRoute
+  '/policy-centre': typeof PolicyCentreRoute
   '/settings': typeof SettingsRoute
   '/system-processes': typeof SystemProcessesRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
@@ -103,6 +110,7 @@ export interface FileRoutesByTo {
   '/failure-drills': typeof FailureDrillsRoute
   '/fallback-guides': typeof FallbackGuidesRoute
   '/knowledge-decay': typeof KnowledgeDecayRoute
+  '/policy-centre': typeof PolicyCentreRoute
   '/settings': typeof SettingsRoute
   '/system-processes': typeof SystemProcessesRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
@@ -118,6 +126,7 @@ export interface FileRoutesById {
   '/failure-drills': typeof FailureDrillsRoute
   '/fallback-guides': typeof FallbackGuidesRoute
   '/knowledge-decay': typeof KnowledgeDecayRoute
+  '/policy-centre': typeof PolicyCentreRoute
   '/settings': typeof SettingsRoute
   '/system-processes': typeof SystemProcessesRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
@@ -134,6 +143,7 @@ export interface FileRouteTypes {
     | '/failure-drills'
     | '/fallback-guides'
     | '/knowledge-decay'
+    | '/policy-centre'
     | '/settings'
     | '/system-processes'
     | '/workflow-recorder'
@@ -148,6 +158,7 @@ export interface FileRouteTypes {
     | '/failure-drills'
     | '/fallback-guides'
     | '/knowledge-decay'
+    | '/policy-centre'
     | '/settings'
     | '/system-processes'
     | '/workflow-recorder'
@@ -162,6 +173,7 @@ export interface FileRouteTypes {
     | '/failure-drills'
     | '/fallback-guides'
     | '/knowledge-decay'
+    | '/policy-centre'
     | '/settings'
     | '/system-processes'
     | '/workflow-recorder'
@@ -177,6 +189,7 @@ export interface RootRouteChildren {
   FailureDrillsRoute: typeof FailureDrillsRoute
   FallbackGuidesRoute: typeof FallbackGuidesRoute
   KnowledgeDecayRoute: typeof KnowledgeDecayRoute
+  PolicyCentreRoute: typeof PolicyCentreRoute
   SettingsRoute: typeof SettingsRoute
   SystemProcessesRoute: typeof SystemProcessesRoute
   WorkflowRecorderRoute: typeof WorkflowRecorderRoute
@@ -207,6 +220,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/policy-centre': {
+      id: '/policy-centre'
+      path: '/policy-centre'
+      fullPath: '/policy-centre'
+      preLoaderRoute: typeof PolicyCentreRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/knowledge-decay': {
@@ -281,6 +301,7 @@ const rootRouteChildren: RootRouteChildren = {
   FailureDrillsRoute: FailureDrillsRoute,
   FallbackGuidesRoute: FallbackGuidesRoute,
   KnowledgeDecayRoute: KnowledgeDecayRoute,
+  PolicyCentreRoute: PolicyCentreRoute,
   SettingsRoute: SettingsRoute,
   SystemProcessesRoute: SystemProcessesRoute,
   WorkflowRecorderRoute: WorkflowRecorderRoute,

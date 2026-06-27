@@ -39,6 +39,7 @@ const NAV = [
   { to: "/failure-drills", label: "Failure Drills", icon: Zap },
   { to: "/knowledge-decay", label: "Knowledge Decay", icon: Clock },
   { to: "/system-processes", label: "System Processes", icon: Code2 },
+  { to: "/policy-centre", label: "Policy Centre", icon: ShieldCheck },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
