@@ -28,6 +28,7 @@ const DEPARTMENTS = ["All", "Finance", "Procurement", "HR", "IT", "Customer Succ
 function DependencyMapPage() {
   const navigate = useNavigate();
   const graph = useGraph();
+  const { focus } = Route.useSearch();
   const workflows = useWorkflows();
   const [is3d, setIs3d] = useState(true);
   const [typeFilter, setTypeFilter] = useState<NodeType[]>([]);
