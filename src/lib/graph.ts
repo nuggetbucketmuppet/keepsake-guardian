@@ -66,6 +66,13 @@ const seedEdges: GraphEdge[] = [
 export const seedGraph: DependencyGraph = { nodes: seedNodes, edges: seedEdges };
 
 // ---- Persistence ----
+function normalizeGraph(g: DependencyGraph): DependencyGraph {
+  return {
+    nodes: g.nodes.map((n) => ({ ...n, type: normalizeNodeType(n.type) })),
+    edges: g.edges,
+  };
+}
+
 function read(): DependencyGraph {
   if (typeof window === "undefined") return seedGraph;
   try {
@@ -74,7 +81,7 @@ function read(): DependencyGraph {
       localStorage.setItem(KEY, JSON.stringify(seedGraph));
       return seedGraph;
     }
-    return JSON.parse(raw) as DependencyGraph;
+    return normalizeGraph(JSON.parse(raw) as DependencyGraph);
   } catch {
     return seedGraph;
   }
@@ -92,7 +99,7 @@ function getSnapshot(): DependencyGraph {
   if (cache && cache.raw === raw) return cache.value;
   let value: DependencyGraph;
   try {
-    value = raw ? (JSON.parse(raw) as DependencyGraph) : seedGraph;
+    value = raw ? normalizeGraph(JSON.parse(raw) as DependencyGraph) : seedGraph;
   } catch {
     value = seedGraph;
   }
