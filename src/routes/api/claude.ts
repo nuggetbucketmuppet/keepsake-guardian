@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 const SYSTEM_PROMPTS: Record<string, string> = {
+  intake:
+    "You are a business continuity analyst building a dependency map. The user describes a workflow (plain text, code, or pseudocode) plus metadata. Extract EVERY platform, service, system, and human step involved and treat them all as EQUAL-WEIGHT nodes — do NOT privilege AI nodes over manual or SaaS ones. Return ONLY valid JSON: {nodes: [{name: string, type: one of 'ai'|'saas'|'internal'|'human'|'external'}], edges: [{source: string, target: string, label?: string}] where source/target are node names showing the flow/dependency direction, risk_summary: string (2-3 sentences on the biggest single points of failure), risk_flags: [{flag_title, description, severity: 'low'|'medium'|'high'|'critical'}], resilience_score: integer 0-100}. No markdown, no preamble.",
   analysis:
     "You are an enterprise resilience analyst. Based on the workflow record provided, analyse it and return a structured JSON response with: 1. risk_flags: array of objects {flag_title, description, severity (low/medium/high/critical)} identifying risks such as over-reliance on AI, data classification concerns, skipped approvals, single points of failure. 2. resilience_score: integer 0-100 rating how resilient this workflow is if AI fails. 3. resilience_reasoning: 2-3 sentences explaining the score. 4. recommended_actions: array of strings with specific recommendations to improve resilience. Respond ONLY in valid JSON. No markdown, no preamble.",
   guide:

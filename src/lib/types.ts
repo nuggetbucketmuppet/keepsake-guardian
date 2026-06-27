@@ -9,8 +9,9 @@ export type Department =
   | "Customer Success"
   | "Operations"
   | "Legal"
+  | "Marketing"
   | "Others";
-export type Frequency = "Daily" | "Weekly" | "Monthly" | "Ad-hoc";
+export type Frequency = "Real-time" | "Daily" | "Weekly" | "Monthly" | "Ad-hoc";
 export type Classification = "Public" | "Internal" | "Confidential" | "Restricted";
 
 export interface SystemTouched {
@@ -129,4 +130,73 @@ export interface DrillRecord {
   scenario: DrillScenario;
   completedTasks: string[];
   debrief?: string;
+}
+
+// ============= Dependency Graph =============
+export type NodeType = "ai" | "saas" | "internal" | "human" | "external" | "unknown";
+export type RiskLevel = "high" | "medium" | "low";
+
+export interface GraphNode {
+  id: string;
+  name: string;
+  type: NodeType;
+  department?: Department;
+  riskLevel: RiskLevel;
+  hasGuide?: boolean;
+  reviewedAt?: string; // ISO date a manager last marked it updated
+  workflowId?: string; // source workflow if generated from an upload
+  // optional manual positions (edit mode)
+  fx?: number;
+  fy?: number;
+  fz?: number;
+}
+export interface GraphEdge {
+  id: string;
+  source: string;
+  target: string;
+  label?: string;
+}
+export interface DependencyGraph {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+}
+
+// Claude intake result for a single workflow upload
+export interface IntakeResult {
+  nodes: { name: string; type: NodeType }[];
+  edges: { source: string; target: string; label?: string }[];
+  risk_summary: string;
+  risk_flags: RiskFlag[];
+  resilience_score: number;
+}
+
+// ============= OpenAI Node-Failure Fallback Guide =============
+export interface NodeGuideContact {
+  role: string;
+  action: string;
+  script: string;
+}
+export interface CyberRisk {
+  risk: string;
+  mitigation: string;
+}
+export interface CommonMistake {
+  mistake: string;
+  prevention: string;
+}
+export interface NodeFallbackGuide {
+  id: string;
+  nodeId?: string;
+  nodeName: string;
+  guide_title: string;
+  scenario: string;
+  cybersecurity_risks: CyberRisk[];
+  immediate_steps_15min: string[];
+  steps_first_hour: string[];
+  steps_first_day: string[];
+  contacts: NodeGuideContact[];
+  common_mistakes: CommonMistake[];
+  recovery_checklist: string[];
+  version: number;
+  generatedDate: string;
 }

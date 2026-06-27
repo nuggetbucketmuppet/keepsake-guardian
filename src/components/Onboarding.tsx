@@ -198,8 +198,8 @@ function StepWelcome() {
       <h2 className="font-display text-3xl font-extrabold tracking-tight">Welcome to KeepSake</h2>
       <p className="mt-3 max-w-md text-base text-accent">When AI goes offline, your team stays online.</p>
       <p className="mt-4 max-w-md text-sm text-muted-foreground">
-        KeepSake safeguards your institutional knowledge as you adopt autonomous AI workflows — so
-        your people can always take the wheel.
+        Map every tool your business depends on — AI or not. Know exactly what breaks when one
+        fails, and have a plan ready before it happens.
       </p>
     </div>
   );
