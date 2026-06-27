@@ -131,7 +131,7 @@
 
   ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #2a2f3d; border-radius: 8px; }
+  ::-webkit-scrollbar-thumb { background: #333a45; border-radius: 0; }
   ::-webkit-scrollbar-thumb:hover { background: #3a4050; }
 }
 
