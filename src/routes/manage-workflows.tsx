@@ -91,6 +91,10 @@ function WorkflowsTab() {
                 {wf.aiTool && wf.aiTool !== "—" && <span>· AI: {wf.aiTool}</span>}
               </div>
             </div>
+            <div className="flex items-center gap-3">
+              <Indicator icon={<ShieldCheck className="h-3.5 w-3.5" />} label="Compliance" value={complianceFor(wf)} />
+              <Indicator icon={<Zap className="h-3.5 w-3.5" />} label="Last drill" value={drillFor(wf)} />
+            </div>
             <div className="flex items-center gap-1">
               <button aria-label="Edit workflow" onClick={() => setEditing(wf)} className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground">
                 <Pencil className="h-4 w-4" />
@@ -102,6 +106,7 @@ function WorkflowsTab() {
           </Card>
         ))}
       </div>
+
 
       {editing && (
         <Modal title={`Edit — ${editing.name}`} onClose={() => setEditing(null)}>
