@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
-  Pencil, Trash2, X, Search, Cpu, Server, User, Save, ChevronDown, Workflow as WorkflowIcon, Boxes, Sparkles, ShieldCheck, Zap, BookOpen,
+  Pencil, Trash2, X, Search, Cpu, Server, User, Save, ChevronDown, Workflow as WorkflowIcon, Boxes, Sparkles, ShieldCheck, Zap, BookOpen, GitFork,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, Card, Button, ScoreBadge, EmptyState } from "@/components/ui-kit";
@@ -174,6 +174,7 @@ const TYPE_ICON: Record<NodeType, React.ReactNode> = {
 };
 
 function NodesTab() {
+  const navigate = useNavigate();
   const graph = useGraph();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | NodeType>("all");
@@ -265,6 +266,9 @@ function NodesTab() {
                   Restore
                 </button>
               )}
+              <button aria-label="Go to node on dependency map" title="Go to map" onClick={() => navigate({ to: "/dependency-map", search: { focus: n.id } })} className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-accent">
+                <GitFork className="h-4 w-4" />
+              </button>
               <button aria-label="Edit node" onClick={() => setEditing(n)} className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground">
                 <Pencil className="h-4 w-4" />
               </button>

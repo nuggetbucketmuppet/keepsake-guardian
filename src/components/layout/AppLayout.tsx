@@ -19,6 +19,7 @@ import {
 import { OnboardingProvider, useOnboarding } from "@/components/Onboarding";
 import { ACCOUNT, useOrg } from "@/lib/store";
 import logo from "@/assets/keepsake-logo.png";
+import profilePhoto from "@/assets/profile-photo.png.asset.json";
 
 function HowThisWorksButton() {
   const { open } = useOnboarding();
@@ -102,9 +103,7 @@ function AppLayoutInner({ children }: { children: ReactNode }) {
 
         <div className="border-t border-border p-3">
           <div className="flex items-center gap-3 rounded-md px-2 py-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-accent/20 text-sm font-bold text-accent ring-1 ring-accent/40">
-              {ACCOUNT.initials}
-            </div>
+            <img src={profilePhoto.url} alt={ACCOUNT.name} className="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-accent/40" />
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-semibold">{org}</div>
               <div className="truncate text-xs text-muted-foreground">{ACCOUNT.email}</div>

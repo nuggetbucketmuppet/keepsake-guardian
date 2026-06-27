@@ -15,6 +15,9 @@ import { useWorkflows } from "@/lib/store";
 import type { GraphNode, GraphEdge, NodeType, RiskLevel, DependencyGraph, Department } from "@/lib/types";
 
 export const Route = createFileRoute("/dependency-map")({
+  validateSearch: (s: Record<string, unknown>): { focus?: string } => ({
+    focus: typeof s.focus === "string" ? s.focus : undefined,
+  }),
   head: () => ({ meta: [{ title: "Dependency Map — KeepSake" }] }),
   component: DependencyMapPage,
 });
@@ -25,6 +28,7 @@ const DEPARTMENTS = ["All", "Finance", "Procurement", "HR", "IT", "Customer Succ
 function DependencyMapPage() {
   const navigate = useNavigate();
   const graph = useGraph();
+  const { focus } = Route.useSearch();
   const workflows = useWorkflows();
   const [is3d, setIs3d] = useState(true);
   const [typeFilter, setTypeFilter] = useState<NodeType[]>([]);
@@ -64,6 +68,15 @@ function DependencyMapPage() {
   }, [graph, typeFilter, dept, risk, noGuideOnly, criticalOnly, workflowFilter, isolatedIds]);
 
   const selConn = selected ? connectedNodes(graph, selected.id) : null;
+
+  // Focus a node when arriving from "Go to map" (?focus=<id>).
+  const focusedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (focus && focusedRef.current !== focus) {
+      const node = graph.nodes.find((n) => n.id === focus);
+      if (node) { setSelected(node); focusedRef.current = focus; }
+    }
+  }, [focus, graph.nodes]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">

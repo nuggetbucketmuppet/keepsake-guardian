@@ -85,12 +85,12 @@ function MultiGenerator({ graph, onGenerated, initialWorkflow, initialNode }: { 
   const generate = async () => {
     if (selected.length === 0) { toast.error("Select at least one node."); return; }
     setRunning(true); setError(null);
-    let made = 0;
     try {
-      for (let i = 0; i < selected.length; i++) {
-        const node = graph.nodes.find((n) => n.id === selected[i]);
-        if (!node) continue;
-        setProgress({ done: i, total: selected.length, current: node.name });
+      const nodes = selected.map((id) => graph.nodes.find((n) => n.id === id)).filter(Boolean) as GraphNode[];
+
+      if (nodes.length === 1) {
+        const node = nodes[0];
+        setProgress({ done: 0, total: 1, current: node.name });
         const conn = connectedNodes(graph, node.id);
         const connectedNames = [...conn.upstream, ...conn.downstream].map((n) => n.name);
         let scenarios: string[] = [];
@@ -100,10 +100,34 @@ function MultiGenerator({ graph, onGenerated, initialWorkflow, initialNode }: { 
         const guide: NodeFallbackGuide = { ...result, id: uid(), nodeId: node.id, nodeName: node.name, version: 1, generatedDate: new Date().toISOString() };
         await putGuide(guide);
         updateNode(node.id, { hasGuide: true });
-        made++;
+        setProgress(null);
+        toast.success("Generated guide and saved offline.");
+        onGenerated();
+        return;
       }
+
+      // Multiple nodes — draft a SINGLE guide covering a simultaneous failure of all of them.
+      const names = nodes.map((n) => n.name);
+      setProgress({ done: 0, total: 1, current: `${names.length} nodes failing together` });
+      const connectedSet = new Set<string>();
+      for (const n of nodes) {
+        const conn = connectedNodes(graph, n.id);
+        [...conn.upstream, ...conn.downstream].forEach((c) => connectedSet.add(c.name));
+      }
+      const connectedNames = [...connectedSet].filter((c) => !names.includes(c));
+      const combinedName = names.join(" + ");
+      const scenarios = [`What if ${names.join(", ")} all fail at the same time?`];
+      const result = await generateNodeGuide({
+        nodeName: combinedName,
+        nodeType: `Combined failure of ${names.length} nodes (${names.join(", ")})`,
+        connectedNodes: connectedNames,
+        scenarios,
+      });
+      const guide: NodeFallbackGuide = { ...result, id: uid(), nodeId: nodes[0].id, nodeName: combinedName, version: 1, generatedDate: new Date().toISOString() };
+      await putGuide(guide);
+      nodes.forEach((n) => updateNode(n.id, { hasGuide: true }));
       setProgress(null);
-      toast.success(`Generated ${made} guide${made === 1 ? "" : "s"} and saved offline.`);
+      toast.success(`Generated 1 combined guide covering ${names.length} nodes, saved offline.`);
       onGenerated();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to generate guides.");
@@ -152,10 +176,10 @@ function MultiGenerator({ graph, onGenerated, initialWorkflow, initialNode }: { 
 
       <div className="mt-4">
         {running ? (
-          <AiLoading message={progress ? `Drafting guide ${progress.done + 1}/${progress.total}: ${progress.current}…` : "Preparing…"} />
+          <AiLoading message={progress ? `Drafting ${progress.current}…` : "Preparing…"} />
         ) : (
           <Button className="w-full" onClick={generate} disabled={selected.length === 0}>
-            <Sparkles className="h-4 w-4" /> Generate {selected.length || ""} Guide{selected.length === 1 ? "" : "s"}
+            <Sparkles className="h-4 w-4" /> {selected.length > 1 ? `Generate 1 Combined Guide (${selected.length} nodes)` : "Generate Guide"}
           </Button>
         )}
       </div>

@@ -9,6 +9,7 @@ const KEYS = {
   policies: "keepsake.policies",
   evaluations: "keepsake.evaluations",
   org: "keepsake.org",
+  settings: "keepsake.settings",
 } as const;
 
 type Listener = () => void;
@@ -158,6 +159,19 @@ export function useOrg(): string {
 }
 export function setOrg(name: string) {
   write(KEYS.org, name);
+}
+
+// ---- App settings (notifications / automation) ----
+export interface AppSettings {
+  drillReminders: boolean;
+  autoPause: boolean;
+}
+const defaultSettings: AppSettings = { drillReminders: true, autoPause: true };
+export function useSettings(): AppSettings {
+  return useStore<AppSettings>(KEYS.settings, defaultSettings);
+}
+export function saveSettings(s: AppSettings) {
+  write(KEYS.settings, s);
 }
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
