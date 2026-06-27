@@ -24,7 +24,7 @@ function ManageWorkflows() {
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
       <PageHeader
         title="Manage Workflows"
-        subtitle="Edit or remove existing workflows, and manage every node — platforms, services, and staff — in your dependency map."
+        subtitle="Edit workflows and manage every node in your dependency map."
       />
 
       <div className="mb-6 inline-flex gap-1 rounded-lg border border-border bg-card p-1">
