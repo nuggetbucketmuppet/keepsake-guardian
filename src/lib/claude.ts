@@ -1,4 +1,13 @@
-import type { IntakeResult, NodeFallbackGuide, AnalysisResult, FallbackGuide, DrillScenario, Workflow } from "./types";
+import type {
+  IntakeResult,
+  NodeFallbackGuide,
+  AnalysisResult,
+  FallbackGuide,
+  DrillScenario,
+  Workflow,
+  Policy,
+  ComplianceEvaluation,
+} from "./types";
 
 // ---- Claude proxy (intake parsing, risk analysis) ----
 async function callClaude<T>(kind: string, payload: unknown): Promise<T> {

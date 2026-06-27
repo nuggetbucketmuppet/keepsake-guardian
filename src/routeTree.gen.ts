@@ -19,6 +19,7 @@ import { Route as DependencyMapRouteImport } from './routes/dependency-map'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as FallbackIdRouteImport } from './routes/fallback.$id'
 import { Route as ApiOpenaiGenerateRouteImport } from './routes/api/openai-generate'
+import { Route as ApiExaScrapeRouteImport } from './routes/api/exa-scrape'
 import { Route as ApiClaudeRouteImport } from './routes/api/claude'
 
 const WorkflowRecorderRoute = WorkflowRecorderRouteImport.update({
@@ -71,6 +72,11 @@ const ApiOpenaiGenerateRoute = ApiOpenaiGenerateRouteImport.update({
   path: '/api/openai-generate',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiExaScrapeRoute = ApiExaScrapeRouteImport.update({
+  id: '/api/exa-scrape',
+  path: '/api/exa-scrape',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiClaudeRoute = ApiClaudeRouteImport.update({
   id: '/api/claude',
   path: '/api/claude',
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/system-processes': typeof SystemProcessesRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
   '/api/claude': typeof ApiClaudeRoute
+  '/api/exa-scrape': typeof ApiExaScrapeRoute
   '/api/openai-generate': typeof ApiOpenaiGenerateRoute
   '/fallback/$id': typeof FallbackIdRoute
 }
@@ -100,6 +107,7 @@ export interface FileRoutesByTo {
   '/system-processes': typeof SystemProcessesRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
   '/api/claude': typeof ApiClaudeRoute
+  '/api/exa-scrape': typeof ApiExaScrapeRoute
   '/api/openai-generate': typeof ApiOpenaiGenerateRoute
   '/fallback/$id': typeof FallbackIdRoute
 }
@@ -114,6 +122,7 @@ export interface FileRoutesById {
   '/system-processes': typeof SystemProcessesRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
   '/api/claude': typeof ApiClaudeRoute
+  '/api/exa-scrape': typeof ApiExaScrapeRoute
   '/api/openai-generate': typeof ApiOpenaiGenerateRoute
   '/fallback/$id': typeof FallbackIdRoute
 }
@@ -129,6 +138,7 @@ export interface FileRouteTypes {
     | '/system-processes'
     | '/workflow-recorder'
     | '/api/claude'
+    | '/api/exa-scrape'
     | '/api/openai-generate'
     | '/fallback/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -142,6 +152,7 @@ export interface FileRouteTypes {
     | '/system-processes'
     | '/workflow-recorder'
     | '/api/claude'
+    | '/api/exa-scrape'
     | '/api/openai-generate'
     | '/fallback/$id'
   id:
@@ -155,6 +166,7 @@ export interface FileRouteTypes {
     | '/system-processes'
     | '/workflow-recorder'
     | '/api/claude'
+    | '/api/exa-scrape'
     | '/api/openai-generate'
     | '/fallback/$id'
   fileRoutesById: FileRoutesById
@@ -169,6 +181,7 @@ export interface RootRouteChildren {
   SystemProcessesRoute: typeof SystemProcessesRoute
   WorkflowRecorderRoute: typeof WorkflowRecorderRoute
   ApiClaudeRoute: typeof ApiClaudeRoute
+  ApiExaScrapeRoute: typeof ApiExaScrapeRoute
   ApiOpenaiGenerateRoute: typeof ApiOpenaiGenerateRoute
   FallbackIdRoute: typeof FallbackIdRoute
 }
@@ -245,6 +258,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiOpenaiGenerateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/exa-scrape': {
+      id: '/api/exa-scrape'
+      path: '/api/exa-scrape'
+      fullPath: '/api/exa-scrape'
+      preLoaderRoute: typeof ApiExaScrapeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/claude': {
       id: '/api/claude'
       path: '/api/claude'
@@ -265,6 +285,7 @@ const rootRouteChildren: RootRouteChildren = {
   SystemProcessesRoute: SystemProcessesRoute,
   WorkflowRecorderRoute: WorkflowRecorderRoute,
   ApiClaudeRoute: ApiClaudeRoute,
+  ApiExaScrapeRoute: ApiExaScrapeRoute,
   ApiOpenaiGenerateRoute: ApiOpenaiGenerateRoute,
   FallbackIdRoute: FallbackIdRoute,
 }
