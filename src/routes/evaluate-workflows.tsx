@@ -21,7 +21,7 @@ function EvaluateWorkflows() {
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
       <PageHeader
         title="Evaluate Workflows"
-        subtitle="Optimise your dependency map for cost, efficiency, or resilience — and surface the most at-risk single points of failure."
+        subtitle="Optimise your dependency map and surface at-risk single points of failure."
       />
       <Tabs.Root defaultValue="optimise">
         <Tabs.List className="mb-6 inline-flex gap-1 rounded-md border border-border bg-card p-1">
