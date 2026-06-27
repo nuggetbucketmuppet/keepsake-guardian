@@ -14,6 +14,7 @@ import {
   LogOut,
   ShieldCheck,
   HelpCircle,
+  Gauge,
 } from "lucide-react";
 import { OnboardingProvider, useOnboarding } from "@/components/Onboarding";
 
