@@ -1,4 +1,4 @@
-import type { Workflow, FallbackGuide, DrillRecord } from "./types";
+import type { Workflow, FallbackGuide, DrillRecord, Policy, ComplianceEvaluation } from "./types";
 
 const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString();
 
