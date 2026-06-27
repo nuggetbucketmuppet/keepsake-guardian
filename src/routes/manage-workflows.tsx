@@ -243,9 +243,60 @@ function NodesTab() {
       )}
 
       {editing && <NodeEditor node={editing} onClose={() => setEditing(null)} />}
+      {showTidy && <TidyModal orphans={orphans} onClose={() => setShowTidy(false)} />}
     </>
   );
 }
+
+function TidyModal({ orphans, onClose }: { orphans: GraphNode[]; onClose: () => void }) {
+  return (
+    <Modal title="Tidy nodes" onClose={onClose}>
+      {orphans.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No orphaned nodes — every node is referenced by at least one workflow connection. 🎉</p>
+      ) : (
+        <>
+          <p className="mb-4 text-sm text-muted-foreground">
+            These nodes aren't connected to any workflow. Archive them to hide from the live map, or delete them permanently.
+          </p>
+          <div className="mb-4 flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => { orphans.forEach((n) => updateNode(n.id, { archived: true })); toast.success(`Archived ${orphans.length} orphaned node(s).`); onClose(); }}
+            >
+              Archive all
+            </Button>
+            <Button
+              variant="danger"
+              onClick={() => { orphans.forEach((n) => removeNode(n.id)); toast.success(`Deleted ${orphans.length} orphaned node(s).`); onClose(); }}
+            >
+              <Trash2 className="h-4 w-4" /> Delete all
+            </Button>
+          </div>
+          <div className="max-h-72 space-y-2 overflow-y-auto">
+            {orphans.map((n) => (
+              <div key={n.id} className="flex items-center gap-3 rounded-md border border-border bg-secondary/30 p-3">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-secondary ring-1 ring-border">
+                  {n.icon ? <span className="text-base leading-none">{n.icon}</span> : TYPE_ICON[n.type]}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-semibold">{n.name}</div>
+                  <div className="text-xs text-muted-foreground">{NODE_LABELS[n.type]}</div>
+                </div>
+                <button aria-label="Archive node" onClick={() => { updateNode(n.id, { archived: true }); toast.success(`Archived "${n.name}".`); }} className="rounded-md px-2 py-1 text-xs font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground">
+                  Archive
+                </button>
+                <button aria-label="Delete node" onClick={() => { removeNode(n.id); toast.success(`Deleted "${n.name}".`); }} className="rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-danger">
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </Modal>
+  );
+}
+
 
 function NodeEditor({ node, onClose }: { node: GraphNode; onClose: () => void }) {
   const [name, setName] = useState(node.name);
