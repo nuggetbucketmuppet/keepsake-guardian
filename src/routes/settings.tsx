@@ -28,7 +28,8 @@ function SettingsPage() {
         <Card hover={false} className="p-6">
           <SectionHead icon={<Building2 className="h-4 w-4" />} title="Organisation" />
           <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Organisation name</label>
-          <input className={inputCls} value={org} onChange={(e) => setOrg(e.target.value)} />
+          <input className={inputCls} value={orgDraft} onChange={(e) => setOrgDraft(e.target.value)} />
+          <p className="mt-2 text-xs text-muted-foreground">Signed in as <span className="font-semibold text-foreground">{ACCOUNT.name}</span> · {ACCOUNT.email}</p>
         </Card>
 
         <Card hover={false} className="p-6">
