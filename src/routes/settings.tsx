@@ -14,7 +14,8 @@ const inputCls =
   "w-full rounded-md border border-input bg-secondary/60 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none";
 
 function SettingsPage() {
-  const [org, setOrg] = useState("Northwind Enterprises");
+  const org = useOrg();
+  const [orgDraft, setOrgDraft] = useState(org);
   const [notifyDecay, setNotifyDecay] = useState(true);
   const [notifyDrills, setNotifyDrills] = useState(true);
   const [autoPause, setAutoPause] = useState(true);
