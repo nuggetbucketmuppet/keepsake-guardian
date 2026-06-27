@@ -37,8 +37,6 @@ const NAV = [
   { to: "/fallback-guides", label: "Fallback Guides", icon: BookOpen },
   { to: "/dependency-map", label: "Dependency Map", icon: GitFork },
   { to: "/failure-drills", label: "Failure Drills", icon: Zap },
-  { to: "/review-health", label: "Review Health", icon: Clock },
-  { to: "/system-processes", label: "System Processes", icon: Code2 },
   { to: "/policy-centre", label: "Policy Centre", icon: ShieldCheck },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
