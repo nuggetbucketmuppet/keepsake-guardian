@@ -221,8 +221,13 @@ export interface Policy {
   url?: string;
   content: string;
   summary?: string;
-  addedDate: string;
+  addedDate: string; // when uploaded into KeepSake
+  fileName?: string; // original uploaded file name
+  policyVersion?: string; // version label if stated in the document
+  effectiveDate?: string; // policy creation / effective date if stated
+  validUntil?: string; // validity / expiry date if stated
 }
+
 
 export type ComplianceStatus = "compliant" | "partial" | "non-compliant";
 export interface ComplianceFinding {
