@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Building2, SlidersHorizontal, Bell, ShieldCheck, Save } from "lucide-react";
+import { Building2, Bell, ShieldCheck, Save } from "lucide-react";
 import { Button, Card, PageHeader } from "@/components/ui-kit";
 
 export const Route = createFileRoute("/settings")({
