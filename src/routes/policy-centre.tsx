@@ -27,7 +27,7 @@ import {
   uid,
 } from "@/lib/store";
 import { scrapePolicies, summarisePolicy, evaluateCompliance } from "@/lib/claude";
-import type { ComplianceStatus, Policy } from "@/lib/types";
+import type { ComplianceStatus, Policy, ComplianceEvaluation } from "@/lib/types";
 
 export const Route = createFileRoute("/policy-centre")({
   head: () => ({
@@ -70,6 +70,10 @@ function PolicyCentre() {
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
   const [content, setContent] = useState("");
+  const [policyVersion, setPolicyVersion] = useState("");
+  const [effectiveDate, setEffectiveDate] = useState("");
+  const [validUntil, setValidUntil] = useState("");
+  const [fileName, setFileName] = useState("");
   const [saving, setSaving] = useState(false);
 
   // Scrape state
@@ -81,10 +85,20 @@ function PolicyCentre() {
   const [policyId, setPolicyId] = useState("");
   const [workflowId, setWorkflowId] = useState("");
   const [evaluating, setEvaluating] = useState(false);
+  const [evalProgress, setEvalProgress] = useState<string | null>(null);
+  const [detail, setDetail] = useState<(typeof evaluations)[number] | null>(null);
+
+  function onPolicyFile(file: File) {
+    setFileName(file.name);
+    if (!name) setName(file.name.replace(/\.[^.]+$/, ""));
+    const reader = new FileReader();
+    reader.onload = () => setContent(String(reader.result ?? ""));
+    reader.readAsText(file);
+  }
 
   async function handleAddPolicy() {
     if (!name.trim() || !content.trim()) {
-      toast.error("Add a policy name and content first.");
+      toast.error("Add a policy name and content (or upload a file) first.");
       return;
     }
     setSaving(true);
@@ -103,10 +117,18 @@ function PolicyCentre() {
         content: content.trim(),
         summary,
         addedDate: new Date().toISOString(),
+        fileName: fileName || undefined,
+        policyVersion: policyVersion.trim() || undefined,
+        effectiveDate: effectiveDate || undefined,
+        validUntil: validUntil || undefined,
       });
       setName("");
       setCategory("");
       setContent("");
+      setPolicyVersion("");
+      setEffectiveDate("");
+      setValidUntil("");
+      setFileName("");
       toast.success("Policy added.");
     } finally {
       setSaving(false);
@@ -144,6 +166,19 @@ function PolicyCentre() {
     toast.success("Policy imported.");
   }
 
+  async function evaluateOne(policy: Policy, workflow: (typeof workflows)[number]) {
+    const result = await evaluateCompliance(policy, workflow);
+    saveEvaluation({
+      id: uid(),
+      workflowId: workflow.id,
+      workflowName: workflow.name,
+      policyId: policy.id,
+      policyName: policy.name,
+      evaluatedDate: new Date().toISOString(),
+      ...result,
+    });
+  }
+
   async function handleEvaluate() {
     const policy = policies.find((p) => p.id === policyId);
     const workflow = workflows.find((w) => w.id === workflowId);
@@ -153,21 +188,41 @@ function PolicyCentre() {
     }
     setEvaluating(true);
     try {
-      const result = await evaluateCompliance(policy, workflow);
-      saveEvaluation({
-        id: uid(),
-        workflowId: workflow.id,
-        workflowName: workflow.name,
-        policyId: policy.id,
-        policyName: policy.name,
-        evaluatedDate: new Date().toISOString(),
-        ...result,
-      });
+      await evaluateOne(policy, workflow);
       toast.success("Evaluation complete.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Evaluation failed.");
     } finally {
       setEvaluating(false);
+    }
+  }
+
+  async function handleEvaluateAll() {
+    const policy = policies.find((p) => p.id === policyId);
+    if (!policy) {
+      toast.error("Pick a policy to evaluate every workflow against.");
+      return;
+    }
+    if (workflows.length === 0) {
+      toast.error("No workflows to evaluate.");
+      return;
+    }
+    setEvaluating(true);
+    let ok = 0;
+    try {
+      for (let i = 0; i < workflows.length; i++) {
+        setEvalProgress(`Evaluating ${i + 1} of ${workflows.length}: ${workflows[i].name}`);
+        try {
+          await evaluateOne(policy, workflows[i]);
+          ok++;
+        } catch {
+          /* skip failures, continue */
+        }
+      }
+      toast.success(`Evaluated ${ok} of ${workflows.length} workflows.`);
+    } finally {
+      setEvaluating(false);
+      setEvalProgress(null);
     }
   }
 
@@ -180,6 +235,7 @@ function PolicyCentre() {
     a.click();
     URL.revokeObjectURL(url);
   }
+
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -212,6 +268,17 @@ function PolicyCentre() {
                 <Plus className="h-5 w-5 text-primary" /> Add a Policy
               </h2>
               <div className="space-y-3">
+                {/* Direct file upload */}
+                <label
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) onPolicyFile(f); }}
+                  className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-secondary/30 py-6 text-center transition-colors hover:border-primary"
+                >
+                  <FileText className="mb-1.5 h-5 w-5 text-muted-foreground" />
+                  <span className="text-sm">{fileName || "Drag & drop or click to upload a policy file"}</span>
+                  <span className="text-xs text-muted-foreground">.txt .md .json .csv</span>
+                  <input type="file" accept=".txt,.md,.json,.csv,text/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onPolicyFile(f); }} />
+                </label>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -224,11 +291,25 @@ function PolicyCentre() {
                   placeholder="Category (e.g. Data Privacy)"
                   className="w-full rounded-md border border-border bg-secondary/60 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary"
                 />
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div>
+                    <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Version</label>
+                    <input value={policyVersion} onChange={(e) => setPolicyVersion(e.target.value)} placeholder="e.g. v2.1" className="w-full rounded-md border border-border bg-secondary/60 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Effective date</label>
+                    <input type="date" value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)} className="w-full rounded-md border border-border bg-secondary/60 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Valid until</label>
+                    <input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} className="w-full rounded-md border border-border bg-secondary/60 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary" />
+                  </div>
+                </div>
                 <textarea
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   rows={6}
-                  placeholder="Paste the policy text here..."
+                  placeholder="…or paste the policy text here"
                   className="w-full rounded-md border border-border bg-secondary/60 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary"
                 />
                 <div className="flex justify-end">
@@ -238,6 +319,7 @@ function PolicyCentre() {
                 </div>
               </div>
             </Card>
+
 
             <Card hover={false} className="p-5">
               <h2 className="mb-1 flex items-center gap-2 font-display text-lg font-bold">
@@ -337,14 +419,17 @@ function PolicyCentre() {
                 </select>
               </div>
             </div>
-            <div className="mt-4 flex justify-end">
+            <div className="mt-4 flex flex-wrap justify-end gap-2">
+              <Button variant="outline" onClick={handleEvaluateAll} disabled={evaluating}>
+                <Sparkles className="h-4 w-4" /> Evaluate All Workflows
+              </Button>
               <Button onClick={handleEvaluate} disabled={evaluating}>
                 <Sparkles className="h-4 w-4" /> {evaluating ? "Evaluating…" : "Evaluate"}
               </Button>
             </div>
           </Card>
 
-          {evaluating && <AiLoading message="Auditing workflow against policy…" />}
+          {evaluating && <AiLoading message={evalProgress ?? "Auditing workflow against policy…"} />}
 
           <div className="flex items-center justify-between">
             <h2 className="font-display text-lg font-bold">Evaluations ({evaluations.length})</h2>
@@ -362,58 +447,91 @@ function PolicyCentre() {
               description="Pick a policy and a workflow above to run your first AI compliance audit."
             />
           ) : (
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {evaluations.map((e, i) => (
-                <motion.div key={e.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
-                  <Card hover={false} className="p-5">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <div className="font-display font-bold">{e.workflowName}</div>
-                        <div className="text-xs text-muted-foreground">
+                <motion.button
+                  key={e.id}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.03 }}
+                  onClick={() => setDetail(e)}
+                  className="text-left"
+                >
+                  <Card hover className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="truncate font-display font-bold">{e.workflowName}</div>
+                        <div className="truncate text-xs text-muted-foreground">
                           vs {e.policyName} · {format(new Date(e.evaluatedDate), "d MMM yyyy")}
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className="font-display text-2xl font-bold">{e.compliance_score}</span>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span className="font-display text-xl font-bold">{e.compliance_score}</span>
                         <StatusBadge status={e.overall_status} />
                       </div>
                     </div>
-                    <p className="mt-3 text-sm text-muted-foreground">{e.summary}</p>
-                    {e.findings.length > 0 && (
-                      <div className="mt-4 space-y-2">
-                        {e.findings.map((f, idx) => (
-                          <div key={idx} className="rounded-md border border-border bg-secondary/40 p-3">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-sm font-semibold">{f.requirement}</span>
-                              <StatusBadge status={f.status} />
-                            </div>
-                            <p className="mt-1 text-xs text-muted-foreground">{f.detail}</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {e.recommendations.length > 0 && (
-                      <div className="mt-4">
-                        <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                          Recommendations
-                        </div>
-                        <ul className="list-disc space-y-1 pl-5 text-sm text-foreground/90">
-                          {e.recommendations.map((r, idx) => (
-                            <li key={idx}>{r}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                    <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{e.summary}</p>
+                    <p className="mt-2 text-[11px] font-semibold text-accent">View details →</p>
                   </Card>
-                </motion.div>
+                </motion.button>
               ))}
             </div>
           )}
         </div>
       )}
+
+      {detail && <EvaluationModal evaluation={detail} onClose={() => setDetail(null)} />}
     </div>
   );
 }
+
+function EvaluationModal({ evaluation: e, onClose }: { evaluation: ComplianceEvaluation; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <div onClick={(ev) => ev.stopPropagation()} className="max-h-[85vh] w-full max-w-2xl overflow-y-auto">
+        <Card hover={false} className="p-6">
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div>
+              <div className="font-display text-xl font-bold">{e.workflowName}</div>
+              <div className="text-xs text-muted-foreground">
+                vs {e.policyName} · {format(new Date(e.evaluatedDate), "d MMM yyyy")}
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="font-display text-3xl font-bold">{e.compliance_score}</span>
+              <StatusBadge status={e.overall_status} />
+              <button onClick={onClose} className="rounded-md p-1.5 hover:bg-secondary"><XCircle className="h-5 w-5" /></button>
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground">{e.summary}</p>
+          {e.findings.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Findings</div>
+              {e.findings.map((f, idx) => (
+                <div key={idx} className="rounded-md border border-border bg-secondary/40 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-semibold">{f.requirement}</span>
+                    <StatusBadge status={f.status} />
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{f.detail}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          {e.recommendations.length > 0 && (
+            <div className="mt-4">
+              <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Recommendations</div>
+              <ul className="list-disc space-y-1 pl-5 text-sm text-foreground/90">
+                {e.recommendations.map((r, idx) => <li key={idx}>{r}</li>)}
+              </ul>
+            </div>
+          )}
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 
 function PolicyRow({ policy, index }: { policy: Policy; index: number }) {
   return (
@@ -428,6 +546,13 @@ function PolicyRow({ policy, index }: { policy: Policy; index: number }) {
               </span>
             </div>
             {policy.summary && <p className="mt-1.5 text-sm text-muted-foreground">{policy.summary}</p>}
+            <div className="mt-2 flex flex-wrap gap-2 text-[10px] text-muted-foreground">
+              <span className="rounded bg-secondary/60 px-1.5 py-0.5">Uploaded {format(new Date(policy.addedDate), "d MMM yyyy")}</span>
+              {policy.policyVersion && <span className="rounded bg-secondary/60 px-1.5 py-0.5">Version {policy.policyVersion}</span>}
+              {policy.effectiveDate && <span className="rounded bg-secondary/60 px-1.5 py-0.5">Effective {format(new Date(policy.effectiveDate), "d MMM yyyy")}</span>}
+              {policy.validUntil && <span className="rounded bg-secondary/60 px-1.5 py-0.5">Valid until {format(new Date(policy.validUntil), "d MMM yyyy")}</span>}
+              {policy.fileName && <span className="rounded bg-secondary/60 px-1.5 py-0.5">{policy.fileName}</span>}
+            </div>
             {policy.url && (
               <a href={policy.url} target="_blank" rel="noreferrer" className="mt-1 block truncate text-xs text-accent hover:underline">
                 {policy.url}

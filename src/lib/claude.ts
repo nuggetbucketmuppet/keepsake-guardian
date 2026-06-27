@@ -138,3 +138,25 @@ export async function summarisePolicy(content: string): Promise<string> {
   return parsed.summary ?? "";
 }
 
+// ---- Platform detection + clarifying questions (OpenAI) ----
+export interface DetectedPlatform { name: string; type: "ai" | "platform" | "human"; reason?: string }
+export interface DetectionResult {
+  platforms: DetectedPlatform[];
+  questions: string[];
+}
+const DETECT_SYSTEM = `You are a business operations analyst. Read the workflow description (plain text, code, or pseudocode) and identify every distinct tool, service, app, AI system, and human role/position it depends on.
+For each, classify it as exactly one of: "ai" (an AI/LLM/ML system), "platform" (any software, SaaS, service, app, database, or API), or "human" (a staff role or position that performs a manual step).
+Also produce 3-6 short clarifying questions a manager should answer before finalising the map. Questions should probe ambiguity, e.g. "Which platform is used for the payment step?", "Is the CRM here the same Salesforce instance used in your Finance workflow?", "Who performs the manual approval — which position?".
+Return ONLY valid JSON: {platforms: [{name: string, type: "ai"|"platform"|"human", reason: string}], questions: string[]}. No markdown, no preamble.`;
+
+export async function detectPlatforms(input: {
+  description: string;
+  existingNodeNames?: string[];
+}): Promise<DetectionResult> {
+  const userMessage = `WORKFLOW INPUT:\n${input.description.slice(0, 8000)}\n\nEXISTING NODES ALREADY IN THE MAP (use these exact names if the workflow reuses them, and ask if a detected item is the same as one of these): ${input.existingNodeNames?.join(", ") || "none"}`;
+  const text = await callOpenAI(DETECT_SYSTEM, userMessage);
+  const parsed = extractJson<Partial<DetectionResult>>(text);
+  return { platforms: parsed.platforms ?? [], questions: parsed.questions ?? [] };
+}
+
+

@@ -133,7 +133,8 @@ export interface DrillRecord {
 }
 
 // ============= Dependency Graph =============
-export type NodeType = "ai" | "saas" | "internal" | "human" | "external" | "unknown";
+// Only three node kinds are allowed: human staff/positions, platforms/services/apps, and AI.
+export type NodeType = "ai" | "platform" | "human";
 export type RiskLevel = "high" | "medium" | "low";
 
 export interface GraphNode {
@@ -145,6 +146,12 @@ export interface GraphNode {
   hasGuide?: boolean;
   reviewedAt?: string; // ISO date a manager last marked it updated
   workflowId?: string; // source workflow if generated from an upload
+  workflowIds?: string[]; // every workflow that references this node (shared nodes)
+  tags?: string[]; // customisation tags
+  // Optional contact details for human (position) nodes — filled via the node popup
+  contactName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
   // optional manual positions (edit mode)
   fx?: number;
   fy?: number;
@@ -155,6 +162,7 @@ export interface GraphEdge {
   source: string;
   target: string;
   label?: string;
+  steps?: string[]; // sequential steps carried out along this branch
 }
 export interface DependencyGraph {
   nodes: GraphNode[];
@@ -213,8 +221,13 @@ export interface Policy {
   url?: string;
   content: string;
   summary?: string;
-  addedDate: string;
+  addedDate: string; // when uploaded into KeepSake
+  fileName?: string; // original uploaded file name
+  policyVersion?: string; // version label if stated in the document
+  effectiveDate?: string; // policy creation / effective date if stated
+  validUntil?: string; // validity / expiry date if stated
 }
+
 
 export type ComplianceStatus = "compliant" | "partial" | "non-compliant";
 export interface ComplianceFinding {

@@ -28,10 +28,14 @@ import {
 } from "@/components/ui-kit";
 import { generateDrill, generateDebrief } from "@/lib/claude";
 import { saveDrill, uid, useDrills, useWorkflows } from "@/lib/store";
+import { useGraph, NODE_LABELS, NODE_COLORS } from "@/lib/graph";
 import type { DrillRecord, DrillScenario } from "@/lib/types";
 
 export const Route = createFileRoute("/failure-drills")({
   head: () => ({ meta: [{ title: "Failure Drills — KeepSake" }] }),
+  validateSearch: (search: Record<string, unknown>): { nodes?: string } => ({
+    nodes: typeof search.nodes === "string" ? search.nodes : undefined,
+  }),
   component: FailureDrills,
 });
 
@@ -48,7 +52,7 @@ function gradeFor(pct: number): string {
 function FailureDrills() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-      <PageHeader title="AI Failure Drill Simulator" subtitle="Test whether your team can keep operations running when AI goes offline." />
+      <PageHeader title="Failure Drill Simulator" subtitle="Test whether your team can keep operations running when any tool, service, AI, or staff member goes offline." />
       <Tabs.Root defaultValue="run">
         <Tabs.List className="mb-6 inline-flex gap-1 rounded-md border border-border bg-card p-1">
           {[{ v: "run", label: "Run a Drill" }, { v: "history", label: "Drill History" }].map((t) => (
@@ -66,9 +70,11 @@ type Phase = "config" | "loading" | "error" | "active" | "results";
 
 function RunDrill() {
   const workflows = useWorkflows();
-  const agents = useMemo(() => Array.from(new Set(workflows.map((w) => w.aiTool))), [workflows]);
+  const graph = useGraph();
+  const search = Route.useSearch();
 
-  const [agent, setAgent] = useState("");
+  // Candidates are ALL nodes — platforms, services, AI, and human staff.
+  const [downNodeIds, setDownNodeIds] = useState<string[]>([]);
   const [affected, setAffected] = useState<string[]>([]);
   const [duration, setDuration] = useState("1 day");
   const [mode, setMode] = useState("Guided");
@@ -85,7 +91,16 @@ function RunDrill() {
   const [debrief, setDebrief] = useState("");
   const [debriefLoading, setDebriefLoading] = useState(false);
 
-  const relatedWorkflows = useMemo(() => workflows.filter((w) => w.aiTool === agent), [workflows, agent]);
+  // Preselect nodes sent from the Dependency Map ("Send to Failure Drill")
+  useEffect(() => {
+    if (search.nodes) {
+      const ids = search.nodes.split(",").filter(Boolean);
+      if (ids.length) setDownNodeIds(ids);
+    }
+  }, [search.nodes]);
+
+  const downNodes = useMemo(() => graph.nodes.filter((n) => downNodeIds.includes(n.id)), [graph, downNodeIds]);
+  const downNames = downNodes.map((n) => n.name).join(", ");
 
   // timer
   useEffect(() => {
@@ -95,11 +110,11 @@ function RunDrill() {
   }, [phase]);
 
   const generate = async () => {
-    if (!agent) return toast.error("Select an AI agent to simulate.");
+    if (downNodeIds.length === 0) return toast.error("Select at least one node to take down.");
     if (!team.trim()) return toast.error("Enter a target team to assess.");
     setPhase("loading");
     try {
-      const sc = await generateDrill({ agent, affectedWorkflows: affected, outageDuration: duration, mode, team });
+      const sc = await generateDrill({ agent: downNames, downedNodes: downNodes.map((n) => ({ name: n.name, type: n.type })), affectedWorkflows: affected, outageDuration: duration, mode, team });
       setScenario(sc);
       setCompleted([]);
       setEvidence({});
@@ -112,6 +127,7 @@ function RunDrill() {
       setPhase("error");
     }
   };
+
 
   const score = useMemo(() => {
     if (!scenario) return 0;
@@ -127,7 +143,7 @@ function RunDrill() {
     const passed = criticalDone && pct >= 60;
     const rec: DrillRecord = {
       id: uid(), name: scenario.scenario_title, dateRun: new Date().toISOString(),
-      agent, team, outageDuration: duration, mode, readinessScore: pct, grade: gradeFor(pct),
+      agent: downNames, team, outageDuration: duration, mode, readinessScore: pct, grade: gradeFor(pct),
       passed, scenario, completedTasks: completed,
     };
     setResult(rec);
@@ -167,29 +183,44 @@ function RunDrill() {
   return (
     <Card hover={false} className="space-y-5 p-6">
       <h3 className="font-display text-lg font-bold">Step 1 — Configure the drill</h3>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">AI Agent to simulate offline</label>
-          <select className={inputCls} value={agent} onChange={(e) => { setAgent(e.target.value); setAffected([]); }}>
-            <option value="">Select an agent…</option>
-            {agents.map((a) => <option key={a}>{a}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Outage duration</label>
-          <select className={inputCls} value={duration} onChange={(e) => setDuration(e.target.value)}>
-            {["4 hours", "1 day", "3 days", "1 week"].map((d) => <option key={d}>{d}</option>)}
-          </select>
-        </div>
+      <div>
+        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Outage duration</label>
+        <select className={inputCls} value={duration} onChange={(e) => setDuration(e.target.value)}>
+          {["4 hours", "1 day", "3 days", "1 week"].map((d) => <option key={d}>{d}</option>)}
+        </select>
       </div>
 
       <div>
-        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Affected workflows</label>
-        {relatedWorkflows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{agent ? "No workflows linked to this agent." : "Select an agent to see affected workflows."}</p>
+        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Nodes to take down — select any platform, service, AI, or staff member (multi-select)</label>
+        {graph.nodes.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No nodes mapped yet. Upload a workflow first.</p>
+        ) : (
+          <div className="grid max-h-60 gap-2 overflow-y-auto rounded-md border border-border bg-secondary/20 p-2 sm:grid-cols-2">
+            {graph.nodes.map((n) => {
+              const on = downNodeIds.includes(n.id);
+              return (
+                <label key={n.id} className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${on ? "border-primary bg-primary/10" : "border-border bg-secondary/40"}`}>
+                  <input type="checkbox" checked={on} onChange={(e) => setDownNodeIds((a) => e.target.checked ? [...a, n.id] : a.filter((x) => x !== n.id))} />
+                  <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: NODE_COLORS[n.type] }} />
+                  <span className="flex-1 truncate">{n.name}</span>
+                  <span className="shrink-0 text-[10px] text-muted-foreground">{NODE_LABELS[n.type]}</span>
+                </label>
+              );
+            })}
+          </div>
+        )}
+        {downNodes.length > 0 && (
+          <p className="mt-1.5 text-[11px] text-muted-foreground">Taking down: {downNames}</p>
+        )}
+      </div>
+
+      <div>
+        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Affected workflows (optional)</label>
+        {workflows.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No workflows recorded yet.</p>
         ) : (
           <div className="grid gap-2 sm:grid-cols-2">
-            {relatedWorkflows.map((w) => (
+            {workflows.map((w) => (
               <label key={w.id} className="flex items-center gap-2 rounded-md border border-border bg-secondary/40 px-3 py-2 text-sm">
                 <input type="checkbox" checked={affected.includes(w.name)} onChange={(e) => setAffected((a) => e.target.checked ? [...a, w.name] : a.filter((x) => x !== w.name))} />
                 {w.name}
@@ -198,6 +229,7 @@ function RunDrill() {
           </div>
         )}
       </div>
+
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>

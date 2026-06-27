@@ -6,8 +6,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, Card, Button, AiLoading, ErrorCard } from "@/components/ui-kit";
-import { parseIntake } from "@/lib/claude";
-import { mergeIntoGraph, NODE_LABELS } from "@/lib/graph";
+import { parseIntake, detectPlatforms } from "@/lib/claude";
+import { mergeIntoGraph, NODE_LABELS, useGraph } from "@/lib/graph";
 import { saveWorkflow, uid } from "@/lib/store";
 import type {
   Department, Frequency, Classification, NodeType, Workflow,
@@ -22,7 +22,7 @@ type Mode = "text" | "code" | "workato";
 const DEPARTMENTS: Department[] = ["Finance", "Procurement", "HR", "IT", "Customer Success", "Operations", "Legal", "Marketing", "Others"];
 const FREQUENCIES: Frequency[] = ["Real-time", "Daily", "Weekly", "Monthly", "Ad-hoc"];
 const CLASSIFICATIONS: Classification[] = ["Public", "Internal", "Confidential", "Restricted"];
-const TAG_TYPES: NodeType[] = ["ai", "saas", "internal", "human", "external"];
+const TAG_TYPES: NodeType[] = ["ai", "platform", "human"];
 
 interface Tag { name: string; type: NodeType }
 
@@ -42,10 +42,46 @@ function WorkflowUpload() {
   const [aiPowered, setAiPowered] = useState<"Yes" | "Partially" | "No">("Partially");
   const [tags, setTags] = useState<Tag[]>([]);
   const [tagInput, setTagInput] = useState("");
-  const [tagType, setTagType] = useState<NodeType>("saas");
+  const [tagType, setTagType] = useState<NodeType>("platform");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // platform auto-detection + clarifying questions
+  const graph = useGraph();
+  const [detecting, setDetecting] = useState(false);
+  const [questions, setQuestions] = useState<string[]>([]);
+  const [answers, setAnswers] = useState<Record<number, string>>({});
+
+  const runDetection = async () => {
+    const content = mode === "code" ? code : description;
+    if (!content.trim()) {
+      toast.error("Add a description or code first so we can detect platforms.");
+      return;
+    }
+    setDetecting(true);
+    try {
+      const existingNodeNames = graph.nodes.map((n) => n.name);
+      const res = await detectPlatforms({ description: content, existingNodeNames });
+      // merge suggested platforms into tags (dedupe by name)
+      setTags((prev) => {
+        const next = [...prev];
+        for (const p of res.platforms) {
+          if (!next.some((t) => t.name.toLowerCase() === p.name.toLowerCase())) {
+            next.push({ name: p.name, type: p.type });
+          }
+        }
+        return next;
+      });
+      setQuestions(res.questions);
+      setAnswers({});
+      toast.success(`Detected ${res.platforms.length} node(s). Answer the questions below to refine.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Detection failed.");
+    } finally {
+      setDetecting(false);
+    }
+  };
 
   const workatoConnected =
     typeof window !== "undefined" && localStorage.getItem("keepsake.workato.connected") === "true";
@@ -75,7 +111,12 @@ function WorkflowUpload() {
       toast.error("Give your workflow a name first.");
       return;
     }
-    const content = mode === "code" ? code : description;
+    const baseContent = mode === "code" ? code : description;
+    const clarifications = questions
+      .map((q, i) => (answers[i]?.trim() ? `Q: ${q}\nA: ${answers[i].trim()}` : null))
+      .filter(Boolean)
+      .join("\n");
+    const content = clarifications ? `${baseContent}\n\nCLARIFICATIONS:\n${clarifications}` : baseContent;
     if (!content.trim() && tags.length === 0) {
       toast.error("Describe the workflow or add at least one platform tag.");
       return;
@@ -251,7 +292,12 @@ function WorkflowUpload() {
 
           {/* Platform tags */}
           <div className="mt-4">
-            <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">Platforms / Services involved — each becomes a node</label>
+            <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
+              <label className="block text-xs font-semibold text-muted-foreground">Platforms / Services involved — each becomes a node</label>
+              <Button variant="outline" className="!py-1 !px-2.5 text-xs" onClick={runDetection} disabled={detecting}>
+                <Sparkles className="h-3.5 w-3.5" /> {detecting ? "Detecting…" : "Auto-detect platforms"}
+              </Button>
+            </div>
             <div className="flex flex-wrap gap-2">
               <select value={tagType} onChange={(e) => setTagType(e.target.value as NodeType)} className="inp w-auto shrink-0">
                 {TAG_TYPES.map((t) => <option key={t} value={t}>{NODE_LABELS[t]}</option>)}
@@ -277,7 +323,29 @@ function WorkflowUpload() {
               </div>
             )}
           </div>
+
+          {questions.length > 0 && (
+            <div className="mt-4 rounded-lg border border-primary/30 bg-primary/5 p-4">
+              <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                <Info className="h-4 w-4 text-primary" /> Clarifying questions — answers refine your map
+              </div>
+              <div className="space-y-3">
+                {questions.map((q, i) => (
+                  <div key={i}>
+                    <label className="mb-1 block text-xs text-muted-foreground">{q}</label>
+                    <input
+                      value={answers[i] ?? ""}
+                      onChange={(e) => setAnswers((a) => ({ ...a, [i]: e.target.value }))}
+                      placeholder="Your answer (optional)"
+                      className="inp"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </Card>
+
 
         {error && <ErrorCard message={error} onRetry={submit} />}
         {loading ? (
