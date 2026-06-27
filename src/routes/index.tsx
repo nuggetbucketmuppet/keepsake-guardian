@@ -98,6 +98,18 @@ function Dashboard() {
     { to: "/fallback-guides", icon: BookOpen, title: "Fallback Guides", desc: "Human-ready plans for when nodes fail.", glow: "accent" as const },
   ];
 
+  // Telemetry-style metrics for the gauges + trend panel.
+  const guideCoverage = workflows.length
+    ? Math.round((new Set(guides.map((g) => g.workflowName)).size / workflows.length) * 100)
+    : 0;
+  const drillReadiness = drills.length
+    ? Math.round(drills.reduce((s, d) => s + d.readinessScore, 0) / drills.length)
+    : 0;
+  const resilienceTrend = [...workflows]
+    .sort((a, b) => +new Date(a.lastUpdated) - +new Date(b.lastUpdated))
+    .map((w, i) => ({ label: `WF${i + 1}`, value: w.resilienceScore }));
+
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <PageHeader
