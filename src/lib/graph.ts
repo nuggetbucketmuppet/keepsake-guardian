@@ -209,19 +209,40 @@ export function connectedNodes(graph: DependencyGraph, nodeId: string): { upstre
   };
 }
 
+// Node render size: humans are small, platforms larger, AI mid; all scale up
+// further with the number of downstream dependencies (single points of failure).
+export function nodeSize(graph: DependencyGraph, node: GraphNode): number {
+  const base = node.type === "human" ? 2 : node.type === "platform" ? 6 : 4;
+  return base + downstreamCount(graph, node.id) * 2.5;
+}
+
+// All nodes reachable from a starting node (ignoring edge direction) — used for "Isolate".
+export function connectedComponent(graph: DependencyGraph, nodeId: string): Set<string> {
+  const adj = new Map<string, string[]>();
+  for (const e of graph.edges) {
+    if (!adj.has(e.source)) adj.set(e.source, []);
+    if (!adj.has(e.target)) adj.set(e.target, []);
+    adj.get(e.source)!.push(e.target);
+    adj.get(e.target)!.push(e.source);
+  }
+  const seen = new Set<string>([nodeId]);
+  const stack = [nodeId];
+  while (stack.length) {
+    const cur = stack.pop()!;
+    for (const next of adj.get(cur) ?? []) {
+      if (!seen.has(next)) { seen.add(next); stack.push(next); }
+    }
+  }
+  return seen;
+}
+
 export const NODE_COLORS: Record<NodeType, string> = {
   ai: "#6C63FF",
-  saas: "#3B82F6",
-  internal: "#00E5BE",
-  human: "#F1F5F9",
-  external: "#F59E0B",
-  unknown: "#8B93A7",
+  platform: "#3B82F6",
+  human: "#00E5BE",
 };
 export const NODE_LABELS: Record<NodeType, string> = {
-  ai: "AI Tool",
-  saas: "SaaS App",
-  internal: "Internal System",
-  human: "Human Step",
-  external: "External Service",
-  unknown: "Unknown",
+  ai: "AI",
+  platform: "Platform / Service",
+  human: "Staff / Position",
 };
