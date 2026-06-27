@@ -128,7 +128,7 @@ function Dashboard() {
             label="Decay Alerts Active"
             value={decayAlerts}
             tone="warning"
-            icon={<Clock className="h-5 w-5" />}
+            icon={<AlertTriangle className="h-5 w-5" />}
             badge={
               decayAlerts > 0 ? (
                 <span className="mb-1 rounded bg-warning/20 px-1.5 py-0.5 text-[10px] font-bold uppercase text-warning ring-1 ring-warning/40">
