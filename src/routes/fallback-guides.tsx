@@ -15,9 +15,10 @@ import { buildGuidePrintHtml } from "@/lib/guide-print";
 import type { NodeFallbackGuide, DependencyGraph, GraphNode } from "@/lib/types";
 
 export const Route = createFileRoute("/fallback-guides")({
-  validateSearch: (s: Record<string, unknown>): { node?: string; workflow?: string } => ({
+  validateSearch: (s: Record<string, unknown>): { node?: string; workflow?: string; create?: boolean } => ({
     node: typeof s.node === "string" ? s.node : undefined,
     workflow: typeof s.workflow === "string" ? s.workflow : undefined,
+    create: s.create === true || s.create === "true",
   }),
   head: () => ({ meta: [{ title: "Fallback Guides — KeepSake" }] }),
   component: FallbackGuides,
