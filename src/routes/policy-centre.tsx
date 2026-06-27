@@ -70,6 +70,10 @@ function PolicyCentre() {
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
   const [content, setContent] = useState("");
+  const [policyVersion, setPolicyVersion] = useState("");
+  const [effectiveDate, setEffectiveDate] = useState("");
+  const [validUntil, setValidUntil] = useState("");
+  const [fileName, setFileName] = useState("");
   const [saving, setSaving] = useState(false);
 
   // Scrape state
@@ -81,10 +85,20 @@ function PolicyCentre() {
   const [policyId, setPolicyId] = useState("");
   const [workflowId, setWorkflowId] = useState("");
   const [evaluating, setEvaluating] = useState(false);
+  const [evalProgress, setEvalProgress] = useState<string | null>(null);
+  const [detail, setDetail] = useState<(typeof evaluations)[number] | null>(null);
+
+  function onPolicyFile(file: File) {
+    setFileName(file.name);
+    if (!name) setName(file.name.replace(/\.[^.]+$/, ""));
+    const reader = new FileReader();
+    reader.onload = () => setContent(String(reader.result ?? ""));
+    reader.readAsText(file);
+  }
 
   async function handleAddPolicy() {
     if (!name.trim() || !content.trim()) {
-      toast.error("Add a policy name and content first.");
+      toast.error("Add a policy name and content (or upload a file) first.");
       return;
     }
     setSaving(true);
@@ -103,10 +117,18 @@ function PolicyCentre() {
         content: content.trim(),
         summary,
         addedDate: new Date().toISOString(),
+        fileName: fileName || undefined,
+        policyVersion: policyVersion.trim() || undefined,
+        effectiveDate: effectiveDate || undefined,
+        validUntil: validUntil || undefined,
       });
       setName("");
       setCategory("");
       setContent("");
+      setPolicyVersion("");
+      setEffectiveDate("");
+      setValidUntil("");
+      setFileName("");
       toast.success("Policy added.");
     } finally {
       setSaving(false);
@@ -144,6 +166,19 @@ function PolicyCentre() {
     toast.success("Policy imported.");
   }
 
+  async function evaluateOne(policy: Policy, workflow: (typeof workflows)[number]) {
+    const result = await evaluateCompliance(policy, workflow);
+    saveEvaluation({
+      id: uid(),
+      workflowId: workflow.id,
+      workflowName: workflow.name,
+      policyId: policy.id,
+      policyName: policy.name,
+      evaluatedDate: new Date().toISOString(),
+      ...result,
+    });
+  }
+
   async function handleEvaluate() {
     const policy = policies.find((p) => p.id === policyId);
     const workflow = workflows.find((w) => w.id === workflowId);
@@ -153,21 +188,41 @@ function PolicyCentre() {
     }
     setEvaluating(true);
     try {
-      const result = await evaluateCompliance(policy, workflow);
-      saveEvaluation({
-        id: uid(),
-        workflowId: workflow.id,
-        workflowName: workflow.name,
-        policyId: policy.id,
-        policyName: policy.name,
-        evaluatedDate: new Date().toISOString(),
-        ...result,
-      });
+      await evaluateOne(policy, workflow);
       toast.success("Evaluation complete.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Evaluation failed.");
     } finally {
       setEvaluating(false);
+    }
+  }
+
+  async function handleEvaluateAll() {
+    const policy = policies.find((p) => p.id === policyId);
+    if (!policy) {
+      toast.error("Pick a policy to evaluate every workflow against.");
+      return;
+    }
+    if (workflows.length === 0) {
+      toast.error("No workflows to evaluate.");
+      return;
+    }
+    setEvaluating(true);
+    let ok = 0;
+    try {
+      for (let i = 0; i < workflows.length; i++) {
+        setEvalProgress(`Evaluating ${i + 1} of ${workflows.length}: ${workflows[i].name}`);
+        try {
+          await evaluateOne(policy, workflows[i]);
+          ok++;
+        } catch {
+          /* skip failures, continue */
+        }
+      }
+      toast.success(`Evaluated ${ok} of ${workflows.length} workflows.`);
+    } finally {
+      setEvaluating(false);
+      setEvalProgress(null);
     }
   }
 
@@ -180,6 +235,7 @@ function PolicyCentre() {
     a.click();
     URL.revokeObjectURL(url);
   }
+
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
