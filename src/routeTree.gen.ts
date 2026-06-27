@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorkflowRecorderRouteImport } from './routes/workflow-recorder'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as PolicyCentreRouteImport } from './routes/policy-centre'
+import { Route as ManageWorkflowsRouteImport } from './routes/manage-workflows'
 import { Route as FallbackGuidesRouteImport } from './routes/fallback-guides'
 import { Route as FailureDrillsRouteImport } from './routes/failure-drills'
 import { Route as DependencyMapRouteImport } from './routes/dependency-map'
@@ -35,6 +36,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const PolicyCentreRoute = PolicyCentreRouteImport.update({
   id: '/policy-centre',
   path: '/policy-centre',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManageWorkflowsRoute = ManageWorkflowsRouteImport.update({
+  id: '/manage-workflows',
+  path: '/manage-workflows',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FallbackGuidesRoute = FallbackGuidesRouteImport.update({
@@ -88,6 +94,7 @@ export interface FileRoutesByFullPath {
   '/dependency-map': typeof DependencyMapRoute
   '/failure-drills': typeof FailureDrillsRoute
   '/fallback-guides': typeof FallbackGuidesRoute
+  '/manage-workflows': typeof ManageWorkflowsRoute
   '/policy-centre': typeof PolicyCentreRoute
   '/settings': typeof SettingsRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
@@ -102,6 +109,7 @@ export interface FileRoutesByTo {
   '/dependency-map': typeof DependencyMapRoute
   '/failure-drills': typeof FailureDrillsRoute
   '/fallback-guides': typeof FallbackGuidesRoute
+  '/manage-workflows': typeof ManageWorkflowsRoute
   '/policy-centre': typeof PolicyCentreRoute
   '/settings': typeof SettingsRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
@@ -117,6 +125,7 @@ export interface FileRoutesById {
   '/dependency-map': typeof DependencyMapRoute
   '/failure-drills': typeof FailureDrillsRoute
   '/fallback-guides': typeof FallbackGuidesRoute
+  '/manage-workflows': typeof ManageWorkflowsRoute
   '/policy-centre': typeof PolicyCentreRoute
   '/settings': typeof SettingsRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
@@ -133,6 +142,7 @@ export interface FileRouteTypes {
     | '/dependency-map'
     | '/failure-drills'
     | '/fallback-guides'
+    | '/manage-workflows'
     | '/policy-centre'
     | '/settings'
     | '/workflow-recorder'
@@ -147,6 +157,7 @@ export interface FileRouteTypes {
     | '/dependency-map'
     | '/failure-drills'
     | '/fallback-guides'
+    | '/manage-workflows'
     | '/policy-centre'
     | '/settings'
     | '/workflow-recorder'
@@ -161,6 +172,7 @@ export interface FileRouteTypes {
     | '/dependency-map'
     | '/failure-drills'
     | '/fallback-guides'
+    | '/manage-workflows'
     | '/policy-centre'
     | '/settings'
     | '/workflow-recorder'
@@ -176,6 +188,7 @@ export interface RootRouteChildren {
   DependencyMapRoute: typeof DependencyMapRoute
   FailureDrillsRoute: typeof FailureDrillsRoute
   FallbackGuidesRoute: typeof FallbackGuidesRoute
+  ManageWorkflowsRoute: typeof ManageWorkflowsRoute
   PolicyCentreRoute: typeof PolicyCentreRoute
   SettingsRoute: typeof SettingsRoute
   WorkflowRecorderRoute: typeof WorkflowRecorderRoute
@@ -207,6 +220,13 @@ declare module '@tanstack/react-router' {
       path: '/policy-centre'
       fullPath: '/policy-centre'
       preLoaderRoute: typeof PolicyCentreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/manage-workflows': {
+      id: '/manage-workflows'
+      path: '/manage-workflows'
+      fullPath: '/manage-workflows'
+      preLoaderRoute: typeof ManageWorkflowsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/fallback-guides': {
@@ -280,6 +300,7 @@ const rootRouteChildren: RootRouteChildren = {
   DependencyMapRoute: DependencyMapRoute,
   FailureDrillsRoute: FailureDrillsRoute,
   FallbackGuidesRoute: FallbackGuidesRoute,
+  ManageWorkflowsRoute: ManageWorkflowsRoute,
   PolicyCentreRoute: PolicyCentreRoute,
   SettingsRoute: SettingsRoute,
   WorkflowRecorderRoute: WorkflowRecorderRoute,
