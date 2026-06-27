@@ -113,28 +113,39 @@ export function useGraph(): DependencyGraph {
 
 // ---- Mutations ----
 // Merge nodes/edges from an intake/import. Match nodes by name (case-insensitive).
+// Returns the names of nodes that already existed in the graph from a *different*
+// workflow — i.e. shared single points of failure now connected across workflows.
 export function mergeIntoGraph(
   newNodes: { name: string; type: NodeType }[],
-  newEdges: { source: string; target: string; label?: string }[],
+  newEdges: { source: string; target: string; label?: string; steps?: string[] }[],
   meta?: { department?: GraphNode["department"]; workflowId?: string; riskLevel?: RiskLevel },
-): void {
+): string[] {
   const g = read();
   const byName = new Map(g.nodes.map((n) => [n.name.toLowerCase(), n]));
+  const sharedNodeNames: string[] = [];
 
   for (const nn of newNodes) {
     const existing = byName.get(nn.name.toLowerCase());
     if (existing) {
-      existing.type = nn.type;
+      existing.type = normalizeNodeType(nn.type);
       if (meta?.department) existing.department = meta.department;
-      if (meta?.workflowId) existing.workflowId = meta.workflowId;
+      // Track every workflow that references this node so shared nodes are visible.
+      const ids = new Set(existing.workflowIds ?? (existing.workflowId ? [existing.workflowId] : []));
+      if (meta?.workflowId && !ids.has(meta.workflowId)) {
+        sharedNodeNames.push(existing.name);
+        ids.add(meta.workflowId);
+      }
+      existing.workflowIds = Array.from(ids);
+      if (meta?.workflowId && !existing.workflowId) existing.workflowId = meta.workflowId;
     } else {
       const node: GraphNode = {
         id: uid(),
         name: nn.name,
-        type: nn.type,
+        type: normalizeNodeType(nn.type),
         department: meta?.department,
         riskLevel: meta?.riskLevel ?? "medium",
         workflowId: meta?.workflowId,
+        workflowIds: meta?.workflowId ? [meta.workflowId] : [],
       };
       g.nodes.push(node);
       byName.set(nn.name.toLowerCase(), node);
@@ -146,10 +157,11 @@ export function mergeIntoGraph(
     const t = byName.get(ne.target.toLowerCase());
     if (!s || !t) continue;
     const dup = g.edges.some((e) => e.source === s.id && e.target === t.id);
-    if (!dup) g.edges.push({ id: uid(), source: s.id, target: t.id, label: ne.label });
+    if (!dup) g.edges.push({ id: uid(), source: s.id, target: t.id, label: ne.label, steps: ne.steps });
   }
 
   write(g);
+  return sharedNodeNames;
 }
 
 export function addNodeManual(node: Omit<GraphNode, "id">): void {
