@@ -7,13 +7,11 @@ import {
   BookOpen,
   GitFork,
   Zap,
-  Clock,
   Settings,
   Menu,
   X,
   LogOut,
   ShieldCheck,
-  Code2,
   HelpCircle,
 } from "lucide-react";
 import { OnboardingProvider, useOnboarding } from "@/components/Onboarding";
