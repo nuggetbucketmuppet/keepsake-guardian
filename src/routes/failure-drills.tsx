@@ -263,17 +263,26 @@ function ActiveDrill({ scenario, mode, completed, hints, evidence, elapsed, scor
                     <span>{task.requires_system_access}</span>
                     <span>~{task.estimated_minutes} min</span>
                   </div>
-                  {hints.includes(task.task_id) && (
+                  {mode === "Guided" && hints.includes(task.task_id) && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mt-2 flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
                       <Lightbulb className="mt-0.5 h-3.5 w-3.5 shrink-0" />{task.hint}
                     </motion.div>
+                  )}
+                  {evidence[task.task_id] && (
+                    <div className="mt-2 flex items-center gap-2 rounded-md border border-success/30 bg-success/10 px-3 py-1.5 text-xs text-success">
+                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0" /> Evidence: {evidence[task.task_id]}
+                    </div>
                   )}
                 </div>
                 <div className="flex shrink-0 flex-col gap-2">
                   <Button variant={done ? "outline" : "accent"} onClick={() => onComplete(task.task_id)} disabled={done}>
                     <CheckCircle2 className="h-4 w-4" /> {done ? "Done" : "Mark Complete"}
                   </Button>
-                  {!hints.includes(task.task_id) && <Button variant="ghost" onClick={() => onHint(task.task_id)}><Lightbulb className="h-4 w-4" /> Hint</Button>}
+                  <label className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-md border border-border bg-secondary/40 px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
+                    <Upload className="h-4 w-4" /> {evidence[task.task_id] ? "Replace" : "Evidence"}
+                    <input type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onEvidence(task.task_id, f.name); }} />
+                  </label>
+                  {mode === "Guided" && !hints.includes(task.task_id) && <Button variant="ghost" onClick={() => onHint(task.task_id)}><Lightbulb className="h-4 w-4" /> Hint</Button>}
                 </div>
               </div>
             </Card>
