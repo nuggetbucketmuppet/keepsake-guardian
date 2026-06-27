@@ -315,12 +315,62 @@ export function WorkflowForm({
 
       {mode === "text" && (
         <Card hover={false} className="overflow-hidden p-5">
-          <label className="mb-2 block text-sm font-semibold">Describe your workflow in plain language. Include every tool, system, person, or step involved — AI or not.</label>
+          <label className="mb-2 block text-sm font-semibold">Describe your workflow</label>
+          <p className="mb-3 text-xs text-muted-foreground">Chat with the assistant below — it asks the most pertinent clarifying questions, then generates a clean description and fills in the details for you.</p>
+
+          {/* Chat */}
+          <div className="rounded-lg border border-border bg-secondary/20">
+            <div className="flex items-center gap-2 border-b border-border px-3 py-2 text-xs font-semibold text-muted-foreground">
+              <MessageSquare className="h-3.5 w-3.5 text-accent" /> Workflow assistant
+            </div>
+            <div className="max-h-72 space-y-3 overflow-y-auto p-3">
+              {chat.map((m, i) => (
+                <div key={i} className={`flex gap-2 ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                  {m.role === "assistant" && (
+                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary/15 text-primary ring-1 ring-primary/30">
+                      <Bot className="h-3.5 w-3.5" />
+                    </span>
+                  )}
+                  <div className={`max-w-[80%] whitespace-pre-wrap rounded-lg px-3 py-2 text-xs ${m.role === "user" ? "bg-primary text-primary-foreground" : "bg-card text-foreground ring-1 ring-border"}`}>
+                    {m.content.replace(/\bREADY\b/g, "").trim() || m.content}
+                  </div>
+                </div>
+              ))}
+              {chatLoading && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Thinking…
+                </div>
+              )}
+              <div ref={chatEndRef} />
+            </div>
+            <div className="flex items-center gap-2 border-t border-border p-2">
+              <input
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); } }}
+                placeholder="Type your reply…"
+                className="inp flex-1 !py-2"
+              />
+              <Button variant="outline" className="shrink-0" onClick={sendChat} disabled={chatLoading || !chatInput.trim()}>
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Button variant="primary" onClick={generateFromChat} disabled={synthesising || !hasConversed}>
+              {synthesising ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {synthesising ? "Generating…" : "Generate description & details"}
+            </Button>
+            {lastReady && <span className="text-xs text-accent">The assistant has enough detail — generate when ready.</span>}
+          </div>
+
+          <label className="mb-2 mt-5 block text-sm font-semibold">Generated description (editable)</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={6}
-            placeholder="e.g. When a customer submits an order on Shopify, it triggers an email via Mailchimp, updates our inventory in Google Sheets, and a staff member manually checks stock every morning before dispatch."
+            placeholder="The generated workflow description will appear here. You can edit it before saving."
             className="w-full rounded-md border border-input bg-secondary/40 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
           <button onClick={() => setShowHint((s) => !s)} className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-accent">
@@ -339,6 +389,7 @@ export function WorkflowForm({
           )}
         </Card>
       )}
+
 
       {mode === "code" && (
         <Card hover={false} className="overflow-hidden p-5">
