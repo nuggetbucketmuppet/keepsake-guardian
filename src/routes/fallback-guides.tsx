@@ -176,10 +176,10 @@ function MultiGenerator({ graph, onGenerated, initialWorkflow, initialNode }: { 
 
       <div className="mt-4">
         {running ? (
-          <AiLoading message={progress ? `Drafting guide ${progress.done + 1}/${progress.total}: ${progress.current}…` : "Preparing…"} />
+          <AiLoading message={progress ? `Drafting ${progress.current}…` : "Preparing…"} />
         ) : (
           <Button className="w-full" onClick={generate} disabled={selected.length === 0}>
-            <Sparkles className="h-4 w-4" /> Generate {selected.length || ""} Guide{selected.length === 1 ? "" : "s"}
+            <Sparkles className="h-4 w-4" /> {selected.length > 1 ? `Generate 1 Combined Guide (${selected.length} nodes)` : "Generate Guide"}
           </Button>
         )}
       </div>
