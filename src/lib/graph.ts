@@ -237,9 +237,9 @@ export function connectedComponent(graph: DependencyGraph, nodeId: string): Set<
 }
 
 export const NODE_COLORS: Record<NodeType, string> = {
-  ai: "#6C63FF",
-  platform: "#3B82F6",
-  human: "#00E5BE",
+  ai: "#2f9be0",
+  platform: "#8a93a3",
+  human: "#3ad17e",
 };
 export const NODE_LABELS: Record<NodeType, string> = {
   ai: "AI",
