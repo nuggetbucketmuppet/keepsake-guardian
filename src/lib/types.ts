@@ -200,3 +200,36 @@ export interface NodeFallbackGuide {
   version: number;
   generatedDate: string;
 }
+
+// ============= Policy Centre =============
+export type PolicySource = "upload" | "scrape";
+export interface Policy {
+  id: string;
+  name: string;
+  category: string;
+  source: PolicySource;
+  url?: string;
+  content: string;
+  summary?: string;
+  addedDate: string;
+}
+
+export type ComplianceStatus = "compliant" | "partial" | "non-compliant";
+export interface ComplianceFinding {
+  requirement: string;
+  status: ComplianceStatus;
+  detail: string;
+}
+export interface ComplianceEvaluation {
+  id: string;
+  workflowId: string;
+  workflowName: string;
+  policyId: string;
+  policyName: string;
+  overall_status: ComplianceStatus;
+  compliance_score: number;
+  summary: string;
+  findings: ComplianceFinding[];
+  recommendations: string[];
+  evaluatedDate: string;
+}
