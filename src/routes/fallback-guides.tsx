@@ -242,7 +242,7 @@ function GuideCard({ guide, onDelete }: { guide: NodeFallbackGuide; onDelete: ()
   return (
     <Card hover={false} className="overflow-hidden">
       <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center justify-between p-4 text-left">
-        <div class="min-w-0" className="min-w-0">
+        <div className="min-w-0">
           <div className="mb-1 flex items-center gap-2">
             <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ring-1 ${guide.track === "policy" ? "bg-accent/15 text-accent ring-accent/40" : "bg-primary/15 text-primary ring-primary/40"}`}>
               {guide.track === "policy" ? <><ScrollText className="h-3 w-3" /> Policy Compliance</> : <><ShieldAlert className="h-3 w-3" /> Node Failure</>}
