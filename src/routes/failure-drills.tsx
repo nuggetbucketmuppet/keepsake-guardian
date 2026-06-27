@@ -183,7 +183,13 @@ function RunDrill() {
   return (
     <Card hover={false} className="space-y-5 p-6">
       <h3 className="font-display text-lg font-bold">Step 1 — Configure the drill</h3>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div>
+        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Outage duration</label>
+        <select className={inputCls} value={duration} onChange={(e) => setDuration(e.target.value)}>
+          {["4 hours", "1 day", "3 days", "1 week"].map((d) => <option key={d}>{d}</option>)}
+        </select>
+      </div>
+
       <div>
         <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Nodes to take down — select any platform, service, AI, or staff member (multi-select)</label>
         {graph.nodes.length === 0 ? (
