@@ -22,7 +22,7 @@ type Mode = "text" | "code" | "workato";
 const DEPARTMENTS: Department[] = ["Finance", "Procurement", "HR", "IT", "Customer Success", "Operations", "Legal", "Marketing", "Others"];
 const FREQUENCIES: Frequency[] = ["Real-time", "Daily", "Weekly", "Monthly", "Ad-hoc"];
 const CLASSIFICATIONS: Classification[] = ["Public", "Internal", "Confidential", "Restricted"];
-const TAG_TYPES: NodeType[] = ["ai", "saas", "internal", "human", "external"];
+const TAG_TYPES: NodeType[] = ["ai", "platform", "human"];
 
 interface Tag { name: string; type: NodeType }
 
