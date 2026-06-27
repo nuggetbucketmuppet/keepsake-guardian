@@ -1,12 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import { format } from "date-fns";
 import Confetti from "react-confetti";
 import { toast } from "sonner";
 import * as Tabs from "@radix-ui/react-tabs";
 import {
-  Zap,
   Sparkles,
   Lightbulb,
   CheckCircle2,
@@ -16,6 +15,8 @@ import {
   Upload,
   FileDown,
   RotateCcw,
+  Zap,
+  X,
 } from "lucide-react";
 import {
   AiLoading,
@@ -51,31 +52,16 @@ function gradeFor(pct: number): string {
   return "F";
 }
 
-function FailureDrills() {
-  return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-      <PageHeader title="Failure Drill Simulator" subtitle="Test whether your team can keep operations running when any tool, service, AI, or staff member goes offline." />
-      <Tabs.Root defaultValue="run">
-        <Tabs.List className="mb-6 inline-flex gap-1 rounded-md border border-border bg-card p-1">
-          {[{ v: "run", label: "Run a Drill" }, { v: "history", label: "Drill History" }].map((t) => (
-            <Tabs.Trigger key={t.v} value={t.v} className="rounded px-4 py-1.5 text-sm font-semibold text-muted-foreground transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">{t.label}</Tabs.Trigger>
-          ))}
-        </Tabs.List>
-        <Tabs.Content value="run"><RunDrill /></Tabs.Content>
-        <Tabs.Content value="history"><DrillHistory /></Tabs.Content>
-      </Tabs.Root>
-    </div>
-  );
-}
-
 type Phase = "config" | "loading" | "error" | "active" | "results";
 
-function RunDrill() {
+function FailureDrills() {
   const workflows = useWorkflows();
   const graph = useGraph();
   const search = Route.useSearch();
 
-  // Candidates are ALL nodes — platforms, services, AI, and human staff.
+  const [tab, setTab] = useState("run");
+
+  // Drill configuration
   const [downNodeIds, setDownNodeIds] = useState<string[]>([]);
   const [affected, setAffected] = useState<string[]>([]);
   const [duration, setDuration] = useState("1 day");
@@ -83,6 +69,7 @@ function RunDrill() {
   const [evidence, setEvidence] = useState<Record<string, string>>({});
   const [team, setTeam] = useState("");
 
+  // Drill machine
   const [phase, setPhase] = useState<Phase>("config");
   const [scenario, setScenario] = useState<DrillScenario | null>(null);
   const [errMsg, setErrMsg] = useState("");
@@ -111,10 +98,13 @@ function RunDrill() {
     return () => clearInterval(t);
   }, [phase]);
 
+  const hasCurrent = phase !== "config";
+
   const generate = async () => {
     if (downNodeIds.length === 0) return toast.error("Select at least one node to take down.");
     if (!team.trim()) return toast.error("Enter a target team to assess.");
     setPhase("loading");
+    setTab("current");
     try {
       const sc = await generateDrill({ agent: downNames, downedNodes: downNodes.map((n) => ({ name: n.name, type: n.type })), affectedWorkflows: affected, outageDuration: duration, mode, team });
       setScenario(sc);
@@ -130,12 +120,10 @@ function RunDrill() {
     }
   };
 
-
   const score = useMemo(() => {
     if (!scenario) return 0;
     const done = scenario.drill_tasks.filter((t) => completed.includes(t.task_id));
-    const pts = scenario.drill_tasks.length ? Math.round((done.length / scenario.drill_tasks.length) * scenario.total_points_available) : 0;
-    return pts;
+    return scenario.drill_tasks.length ? Math.round((done.length / scenario.drill_tasks.length) * scenario.total_points_available) : 0;
   }, [scenario, completed]);
 
   const finish = async () => {
@@ -163,25 +151,75 @@ function RunDrill() {
     }
   };
 
-  const reset = () => { setPhase("config"); setScenario(null); setResult(null); setDebrief(""); };
+  const reset = () => {
+    setPhase("config");
+    setScenario(null);
+    setResult(null);
+    setDebrief("");
+    setTab("run");
+  };
 
-  if (phase === "loading") return <AiLoading message="Constructing failure scenario..." />;
-  if (phase === "error") return <ErrorCard message={errMsg} onRetry={generate} />;
+  return (
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+      <PageHeader title="Failure Drill Simulator" subtitle="Test whether your team can keep operations running when any tool, service, AI, or staff member goes offline." />
+      <Tabs.Root value={tab} onValueChange={setTab}>
+        <Tabs.List className="mb-6 inline-flex gap-1 rounded-md border border-border bg-card p-1">
+          <Tabs.Trigger value="run" className="rounded px-4 py-1.5 text-sm font-semibold text-muted-foreground transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Run a Drill</Tabs.Trigger>
+          {hasCurrent && (
+            <Tabs.Trigger value="current" className="inline-flex items-center gap-1.5 rounded px-4 py-1.5 text-sm font-semibold text-muted-foreground transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <span className={`h-1.5 w-1.5 rounded-full ${phase === "results" ? "bg-success" : "bg-danger animate-pulse"}`} />
+              Current Drill
+            </Tabs.Trigger>
+          )}
+          <Tabs.Trigger value="history" className="rounded px-4 py-1.5 text-sm font-semibold text-muted-foreground transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Drill History</Tabs.Trigger>
+        </Tabs.List>
 
-  if (phase === "active" && scenario) {
-    return (
-      <ActiveDrill scenario={scenario} mode={mode} completed={completed} hints={hints} evidence={evidence} elapsed={elapsed} score={score}
-        onComplete={(id) => setCompleted((c) => c.includes(id) ? c : [...c, id])}
-        onHint={(id) => setHints((h) => h.includes(id) ? h : [...h, id])}
-        onEvidence={(id, name) => setEvidence((e) => ({ ...e, [id]: name }))}
-        onFinish={finish} />
-    );
-  }
+        <Tabs.Content value="run">
+          <ConfigForm
+            graph={graph} workflows={workflows}
+            downNodeIds={downNodeIds} setDownNodeIds={setDownNodeIds} downNodes={downNodes} downNames={downNames}
+            affected={affected} setAffected={setAffected}
+            duration={duration} setDuration={setDuration}
+            mode={mode} setMode={setMode}
+            team={team} setTeam={setTeam}
+            onGenerate={generate}
+          />
+        </Tabs.Content>
 
-  if (phase === "results" && result) {
-    return <Results result={result} debrief={debrief} debriefLoading={debriefLoading} onReset={reset} />;
-  }
+        <Tabs.Content value="current">
+          {phase === "loading" && <AiLoading message="Constructing failure scenario..." />}
+          {phase === "error" && <ErrorCard message={errMsg} onRetry={generate} />}
+          {phase === "active" && scenario && (
+            <ActiveDrill scenario={scenario} mode={mode} completed={completed} hints={hints} evidence={evidence} elapsed={elapsed} score={score}
+              onComplete={(id) => setCompleted((c) => c.includes(id) ? c : [...c, id])}
+              onHint={(id) => setHints((h) => h.includes(id) ? h : [...h, id])}
+              onEvidence={(id, name) => setEvidence((e) => ({ ...e, [id]: name }))}
+              onFinish={finish} />
+          )}
+          {phase === "results" && result && (
+            <Results result={result} debrief={debrief} debriefLoading={debriefLoading} onReset={reset} />
+          )}
+        </Tabs.Content>
 
+        <Tabs.Content value="history"><DrillHistory /></Tabs.Content>
+      </Tabs.Root>
+    </div>
+  );
+}
+
+function ConfigForm({
+  graph, workflows, downNodeIds, setDownNodeIds, downNodes, downNames, affected, setAffected,
+  duration, setDuration, mode, setMode, team, setTeam, onGenerate,
+}: {
+  graph: ReturnType<typeof useGraph>; workflows: ReturnType<typeof useWorkflows>;
+  downNodeIds: string[]; setDownNodeIds: React.Dispatch<React.SetStateAction<string[]>>;
+  downNodes: { id: string; name: string }[]; downNames: string;
+  affected: string[]; setAffected: React.Dispatch<React.SetStateAction<string[]>>;
+  duration: string; setDuration: (v: string) => void;
+  mode: string; setMode: (v: string) => void;
+  team: string; setTeam: (v: string) => void;
+  onGenerate: () => void;
+}) {
   return (
     <Card hover={false} className="space-y-5 p-6">
       <h3 className="font-display text-lg font-bold">Step 1 — Configure the drill</h3>
@@ -232,7 +270,6 @@ function RunDrill() {
         )}
       </div>
 
-
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Drill mode</label>
@@ -252,7 +289,7 @@ function RunDrill() {
         </div>
       </div>
 
-      <Button variant="accent" onClick={generate}><Sparkles className="h-4 w-4" /> Generate Drill Scenario</Button>
+      <Button variant="accent" onClick={onGenerate}><Sparkles className="h-4 w-4" /> Generate Drill Scenario</Button>
     </Card>
   );
 }
@@ -335,16 +372,11 @@ function ActiveDrill({ scenario, mode, completed, hints, evidence, elapsed, scor
   );
 }
 
-function Results({ result, debrief, debriefLoading, onReset }: { result: DrillRecord; debrief: string; debriefLoading: boolean; onReset: () => void }) {
-  const [showConfetti, setShowConfetti] = useState(result.passed);
-  useEffect(() => {
-    if (result.passed) { const t = setTimeout(() => setShowConfetti(false), 3000); return () => clearTimeout(t); }
-  }, [result.passed]);
-
+// Full read-only drill report — used in the results screen and history viewer.
+function DrillReportBody({ result, debrief, debriefLoading }: { result: DrillRecord; debrief: string; debriefLoading: boolean }) {
   const sc = result.scenario;
   return (
     <div className="space-y-5">
-      {showConfetti && <Confetti recycle={false} numberOfPieces={280} />}
       <Card hover={false} className="flex flex-col items-center gap-4 p-8 text-center sm:flex-row sm:text-left">
         <ScoreGauge score={result.readinessScore} size={150} />
         <div>
@@ -353,8 +385,34 @@ function Results({ result, debrief, debriefLoading, onReset }: { result: DrillRe
             <span className={`rounded-md px-3 py-1 text-sm font-bold uppercase ring-1 ${result.passed ? "bg-success/15 text-success ring-success/40" : "bg-danger/15 text-danger ring-danger/40"}`}>{result.passed ? "Passed" : "Failed"}</span>
           </div>
           <h3 className="mt-2 font-display text-xl font-bold">{result.name}</h3>
-          <p className="mt-1 text-sm text-muted-foreground">{result.team} · {result.agent} offline for {result.outageDuration}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{result.team} · {result.agent} offline for {result.outageDuration} · {result.mode}</p>
           <p className="mt-1 text-xs text-muted-foreground">Pass requires all critical tasks complete and ≥60% readiness.</p>
+        </div>
+      </Card>
+
+      <Card hover={false} className="p-5">
+        <h4 className="mb-2 font-display font-bold">Scenario briefing</h4>
+        <p className="whitespace-pre-line text-sm text-foreground/90">{sc.scenario_briefing}</p>
+        <p className="mt-3 font-display text-base font-bold">{sc.critical_question}</p>
+      </Card>
+
+      <Card hover={false} className="p-5">
+        <h4 className="mb-3 font-display font-bold">Tasks ({result.completedTasks.length}/{sc.drill_tasks.length} completed)</h4>
+        <div className="space-y-2">
+          {sc.drill_tasks.map((t) => {
+            const done = result.completedTasks.includes(t.task_id);
+            return (
+              <div key={t.task_id} className={`rounded-md border p-3 ${done ? "border-success/40 bg-success/5" : "border-border bg-secondary/20"}`}>
+                <div className="flex items-center gap-2">
+                  {done ? <CheckCircle2 className="h-4 w-4 shrink-0 text-success" /> : <X className="h-4 w-4 shrink-0 text-danger" />}
+                  <span className="font-display text-sm font-bold">{t.task_title}</span>
+                  {t.is_critical && <span className="rounded bg-danger/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-danger ring-1 ring-danger/40">Critical</span>}
+                  <span className="ml-auto shrink-0 font-mono text-[11px] text-muted-foreground">~{t.estimated_minutes} min</span>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">{t.task_description}</p>
+              </div>
+            );
+          })}
         </div>
       </Card>
 
@@ -377,7 +435,20 @@ function Results({ result, debrief, debriefLoading, onReset }: { result: DrillRe
         <h4 className="mb-3 font-display font-bold">AI Debrief</h4>
         {debriefLoading ? <p className="font-mono text-sm text-accent">Analysing team performance…</p> : <p className="whitespace-pre-line text-sm text-foreground/90">{debrief}</p>}
       </Card>
+    </div>
+  );
+}
 
+function Results({ result, debrief, debriefLoading, onReset }: { result: DrillRecord; debrief: string; debriefLoading: boolean; onReset: () => void }) {
+  const [showConfetti, setShowConfetti] = useState(result.passed);
+  useEffect(() => {
+    if (result.passed) { const t = setTimeout(() => setShowConfetti(false), 3000); return () => clearTimeout(t); }
+  }, [result.passed]);
+
+  return (
+    <div className="space-y-5">
+      {showConfetti && <Confetti recycle={false} numberOfPieces={280} />}
+      <DrillReportBody result={result} debrief={debrief} debriefLoading={debriefLoading} />
       <div className="flex gap-3">
         <Button variant="accent" onClick={() => toast.success("Drill report exported.")}><FileDown className="h-4 w-4" /> Export Drill Report</Button>
         <Button variant="outline" onClick={onReset}><RotateCcw className="h-4 w-4" /> Run Another Drill</Button>
@@ -388,29 +459,49 @@ function Results({ result, debrief, debriefLoading, onReset }: { result: DrillRe
 
 function DrillHistory() {
   const drills = useDrills();
+  const [viewing, setViewing] = useState<DrillRecord | null>(null);
+
   if (drills.length === 0) {
     return <EmptyState icon={<Zap className="h-7 w-7" />} title="No drills run yet" description="Run your first AI failure drill to assess team readiness." />;
   }
   return (
-    <Card hover={false} className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead><tr className="border-b border-border text-left text-xs uppercase text-muted-foreground">
-          <th className="p-3">Drill</th><th className="p-3">Date</th><th className="p-3">Agent</th><th className="p-3">Team</th><th className="p-3">Score</th><th className="p-3">Grade</th><th className="p-3"></th>
-        </tr></thead>
-        <tbody>
-          {drills.map((d) => (
-            <tr key={d.id} className="border-b border-border/50">
-              <td className="p-3 font-medium">{d.name}</td>
-              <td className="p-3 text-muted-foreground">{format(new Date(d.dateRun), "d MMM yyyy")}</td>
-              <td className="p-3 text-muted-foreground">{d.agent}</td>
-              <td className="p-3 text-muted-foreground">{d.team}</td>
-              <td className="p-3 font-mono">{d.readinessScore}%</td>
-              <td className="p-3"><span className={`rounded px-2 py-0.5 text-xs font-bold ${d.passed ? "bg-success/15 text-success" : "bg-danger/15 text-danger"}`}>{d.grade}</span></td>
-              <td className="p-3"><Button variant="ghost" onClick={() => toast.message(d.debrief || "No debrief available.")}>View Report</Button></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </Card>
+    <>
+      <Card hover={false} className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead><tr className="border-b border-border text-left text-xs uppercase text-muted-foreground">
+            <th className="p-3">Drill</th><th className="p-3">Date</th><th className="p-3">Agent</th><th className="p-3">Team</th><th className="p-3">Score</th><th className="p-3">Grade</th><th className="p-3"></th>
+          </tr></thead>
+          <tbody>
+            {drills.map((d) => (
+              <tr key={d.id} className="border-b border-border/50">
+                <td className="p-3 font-medium">{d.name}</td>
+                <td className="p-3 text-muted-foreground">{format(new Date(d.dateRun), "d MMM yyyy")}</td>
+                <td className="p-3 text-muted-foreground">{d.agent}</td>
+                <td className="p-3 text-muted-foreground">{d.team}</td>
+                <td className="p-3 font-mono">{d.readinessScore}%</td>
+                <td className="p-3"><span className={`rounded px-2 py-0.5 text-xs font-bold ${d.passed ? "bg-success/15 text-success" : "bg-danger/15 text-danger"}`}>{d.grade}</span></td>
+                <td className="p-3"><Button variant="ghost" onClick={() => setViewing(d)}>View Report</Button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
+
+      {viewing && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm" onClick={() => setViewing(null)}>
+          <div className="my-8 w-full max-w-3xl rounded-xl border border-border bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 rounded-t-xl border-b border-border bg-card px-5 py-4">
+              <h2 className="font-display text-base font-bold">Drill Report</h2>
+              <button aria-label="Close" onClick={() => setViewing(null)} className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-5">
+              <DrillReportBody result={viewing} debrief={viewing.debrief || "No debrief was recorded for this drill."} debriefLoading={false} />
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
