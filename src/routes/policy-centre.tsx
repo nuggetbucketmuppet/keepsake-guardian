@@ -419,14 +419,17 @@ function PolicyCentre() {
                 </select>
               </div>
             </div>
-            <div className="mt-4 flex justify-end">
+            <div className="mt-4 flex flex-wrap justify-end gap-2">
+              <Button variant="outline" onClick={handleEvaluateAll} disabled={evaluating}>
+                <Sparkles className="h-4 w-4" /> Evaluate All Workflows
+              </Button>
               <Button onClick={handleEvaluate} disabled={evaluating}>
                 <Sparkles className="h-4 w-4" /> {evaluating ? "Evaluating…" : "Evaluate"}
               </Button>
             </div>
           </Card>
 
-          {evaluating && <AiLoading message="Auditing workflow against policy…" />}
+          {evaluating && <AiLoading message={evalProgress ?? "Auditing workflow against policy…"} />}
 
           <div className="flex items-center justify-between">
             <h2 className="font-display text-lg font-bold">Evaluations ({evaluations.length})</h2>
@@ -444,58 +447,91 @@ function PolicyCentre() {
               description="Pick a policy and a workflow above to run your first AI compliance audit."
             />
           ) : (
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {evaluations.map((e, i) => (
-                <motion.div key={e.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
-                  <Card hover={false} className="p-5">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <div className="font-display font-bold">{e.workflowName}</div>
-                        <div className="text-xs text-muted-foreground">
+                <motion.button
+                  key={e.id}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.03 }}
+                  onClick={() => setDetail(e)}
+                  className="text-left"
+                >
+                  <Card hover className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="truncate font-display font-bold">{e.workflowName}</div>
+                        <div className="truncate text-xs text-muted-foreground">
                           vs {e.policyName} · {format(new Date(e.evaluatedDate), "d MMM yyyy")}
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className="font-display text-2xl font-bold">{e.compliance_score}</span>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span className="font-display text-xl font-bold">{e.compliance_score}</span>
                         <StatusBadge status={e.overall_status} />
                       </div>
                     </div>
-                    <p className="mt-3 text-sm text-muted-foreground">{e.summary}</p>
-                    {e.findings.length > 0 && (
-                      <div className="mt-4 space-y-2">
-                        {e.findings.map((f, idx) => (
-                          <div key={idx} className="rounded-md border border-border bg-secondary/40 p-3">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-sm font-semibold">{f.requirement}</span>
-                              <StatusBadge status={f.status} />
-                            </div>
-                            <p className="mt-1 text-xs text-muted-foreground">{f.detail}</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {e.recommendations.length > 0 && (
-                      <div className="mt-4">
-                        <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                          Recommendations
-                        </div>
-                        <ul className="list-disc space-y-1 pl-5 text-sm text-foreground/90">
-                          {e.recommendations.map((r, idx) => (
-                            <li key={idx}>{r}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                    <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{e.summary}</p>
+                    <p className="mt-2 text-[11px] font-semibold text-accent">View details →</p>
                   </Card>
-                </motion.div>
+                </motion.button>
               ))}
             </div>
           )}
         </div>
       )}
+
+      {detail && <EvaluationModal evaluation={detail} onClose={() => setDetail(null)} />}
     </div>
   );
 }
+
+function EvaluationModal({ evaluation: e, onClose }: { evaluation: ComplianceEvaluation; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <div onClick={(ev) => ev.stopPropagation()} className="max-h-[85vh] w-full max-w-2xl overflow-y-auto">
+        <Card hover={false} className="p-6">
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div>
+              <div className="font-display text-xl font-bold">{e.workflowName}</div>
+              <div className="text-xs text-muted-foreground">
+                vs {e.policyName} · {format(new Date(e.evaluatedDate), "d MMM yyyy")}
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="font-display text-3xl font-bold">{e.compliance_score}</span>
+              <StatusBadge status={e.overall_status} />
+              <button onClick={onClose} className="rounded-md p-1.5 hover:bg-secondary"><XCircle className="h-5 w-5" /></button>
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground">{e.summary}</p>
+          {e.findings.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Findings</div>
+              {e.findings.map((f, idx) => (
+                <div key={idx} className="rounded-md border border-border bg-secondary/40 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-semibold">{f.requirement}</span>
+                    <StatusBadge status={f.status} />
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{f.detail}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          {e.recommendations.length > 0 && (
+            <div className="mt-4">
+              <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Recommendations</div>
+              <ul className="list-disc space-y-1 pl-5 text-sm text-foreground/90">
+                {e.recommendations.map((r, idx) => <li key={idx}>{r}</li>)}
+              </ul>
+            </div>
+          )}
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 
 function PolicyRow({ policy, index }: { policy: Policy; index: number }) {
   return (
