@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Box, Square, Plus, Pencil, BookOpen, CheckCircle2, ShieldAlert,
-  Crosshair, Zap, User, ListOrdered,
+  Zap, User, ListOrdered,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, Card, Button } from "@/components/ui-kit";
