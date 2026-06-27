@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { PulseRing } from "@/components/PulseRing";
 import { Card, PageHeader, StatCard } from "@/components/ui-kit";
+import { DonutGauge, AreaTrend } from "@/components/charts";
 import { useWorkflows, useGuides, useDrills } from "@/lib/store";
 
 export const Route = createFileRoute("/")({
