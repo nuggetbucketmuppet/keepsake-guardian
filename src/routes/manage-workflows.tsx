@@ -161,14 +161,15 @@ function NodesTab() {
   const [filter, setFilter] = useState<"all" | NodeType>("all");
   const [editing, setEditing] = useState<GraphNode | null>(null);
   const [showTidy, setShowTidy] = useState(false);
-  const [showArchived, setShowArchived] = useState(false);
+  const [archiveView, setArchiveView] = useState<"active" | "archived" | "all">("active");
 
   const orphans = useMemo(() => orphanNodes(graph).filter((n) => !n.archived), [graph]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return graph.nodes.filter((n) => {
-      if (!showArchived && n.archived) return false;
+      if (archiveView === "active" && n.archived) return false;
+      if (archiveView === "archived" && !n.archived) return false;
       if (filter !== "all" && n.type !== filter) return false;
       if (!q) return true;
       return (
@@ -178,7 +179,8 @@ function NodesTab() {
         (n.tags ?? []).some((t) => t.toLowerCase().includes(q))
       );
     });
-  }, [graph.nodes, query, filter, showArchived]);
+  }, [graph.nodes, query, filter, archiveView]);
+
 
 
   return (
