@@ -17,6 +17,8 @@ import {
   Gauge,
 } from "lucide-react";
 import { OnboardingProvider, useOnboarding } from "@/components/Onboarding";
+import { ACCOUNT, useOrg } from "@/lib/store";
+import logo from "@/assets/keepsake-logo.png";
 
 function HowThisWorksButton() {
   const { open } = useOnboarding();
