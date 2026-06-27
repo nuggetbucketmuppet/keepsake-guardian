@@ -151,9 +151,10 @@ function RunDrill() {
 
   if (phase === "active" && scenario) {
     return (
-      <ActiveDrill scenario={scenario} completed={completed} hints={hints} elapsed={elapsed} score={score}
+      <ActiveDrill scenario={scenario} mode={mode} completed={completed} hints={hints} evidence={evidence} elapsed={elapsed} score={score}
         onComplete={(id) => setCompleted((c) => c.includes(id) ? c : [...c, id])}
         onHint={(id) => setHints((h) => h.includes(id) ? h : [...h, id])}
+        onEvidence={(id, name) => setEvidence((e) => ({ ...e, [id]: name }))}
         onFinish={finish} />
     );
   }
