@@ -3,6 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Building2, Bell, ShieldCheck, Save } from "lucide-react";
 import { Button, Card, PageHeader } from "@/components/ui-kit";
+import { ACCOUNT, useOrg, setOrg } from "@/lib/store";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({ meta: [{ title: "Settings — KeepSake" }] }),
@@ -13,7 +14,8 @@ const inputCls =
   "w-full rounded-md border border-input bg-secondary/60 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none";
 
 function SettingsPage() {
-  const [org, setOrg] = useState("Northwind Enterprises");
+  const org = useOrg();
+  const [orgDraft, setOrgDraft] = useState(org);
   const [notifyDecay, setNotifyDecay] = useState(true);
   const [notifyDrills, setNotifyDrills] = useState(true);
   const [autoPause, setAutoPause] = useState(true);
@@ -26,7 +28,8 @@ function SettingsPage() {
         <Card hover={false} className="p-6">
           <SectionHead icon={<Building2 className="h-4 w-4" />} title="Organisation" />
           <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Organisation name</label>
-          <input className={inputCls} value={org} onChange={(e) => setOrg(e.target.value)} />
+          <input className={inputCls} value={orgDraft} onChange={(e) => setOrgDraft(e.target.value)} />
+          <p className="mt-2 text-xs text-muted-foreground">Signed in as <span className="font-semibold text-foreground">{ACCOUNT.name}</span> · {ACCOUNT.email}</p>
         </Card>
 
         <Card hover={false} className="p-6">
@@ -49,7 +52,7 @@ function SettingsPage() {
           </div>
         </Card>
 
-        <Button variant="accent" onClick={() => toast.success("Settings saved.")}><Save className="h-4 w-4" /> Save Settings</Button>
+        <Button variant="accent" onClick={() => { setOrg(orgDraft.trim() || ACCOUNT.name); toast.success("Settings saved."); }}><Save className="h-4 w-4" /> Save Settings</Button>
       </div>
     </div>
   );

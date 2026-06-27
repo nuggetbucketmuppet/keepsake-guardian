@@ -145,6 +145,21 @@ export function saveEvaluation(e: ComplianceEvaluation) {
   write(KEYS.evaluations, list);
 }
 
+// ---- Account / Organisation ----
+// The signed-in account. Settings stays in sync with this organisation.
+export const ACCOUNT = {
+  name: "Acme Corp",
+  email: "alex.chen@acme.com",
+  initials: "AC",
+} as const;
+
+export function useOrg(): string {
+  return useStore<string>(KEYS.org, ACCOUNT.name);
+}
+export function setOrg(name: string) {
+  write(KEYS.org, name);
+}
+
 export const uid = () => Math.random().toString(36).slice(2, 10);
 
 export function useRefresh() {

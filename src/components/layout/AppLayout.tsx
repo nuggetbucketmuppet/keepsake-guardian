@@ -17,6 +17,8 @@ import {
   Gauge,
 } from "lucide-react";
 import { OnboardingProvider, useOnboarding } from "@/components/Onboarding";
+import { ACCOUNT, useOrg } from "@/lib/store";
+import logo from "@/assets/keepsake-logo.png";
 
 function HowThisWorksButton() {
   const { open } = useOnboarding();
@@ -54,6 +56,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
 function AppLayoutInner({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const org = useOrg();
 
   return (
     <div className="flex min-h-screen w-full bg-background text-foreground">
@@ -65,7 +68,7 @@ function AppLayoutInner({ children }: { children: ReactNode }) {
       >
         <div className="flex items-center gap-2.5 px-5 py-5">
           <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/15 ring-1 ring-primary/40">
-            <ShieldCheck className="h-5 w-5 text-primary" />
+            <img src={logo} alt="KeepSake logo" className="h-6 w-6 object-contain" />
           </div>
           <div>
             <div className="font-display text-lg font-extrabold leading-none tracking-tight">KeepSake</div>
@@ -100,11 +103,11 @@ function AppLayoutInner({ children }: { children: ReactNode }) {
         <div className="border-t border-border p-3">
           <div className="flex items-center gap-3 rounded-md px-2 py-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-accent/20 text-sm font-bold text-accent ring-1 ring-accent/40">
-              AC
+              {ACCOUNT.initials}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-semibold">Acme Corp</div>
-              <div className="truncate text-xs text-muted-foreground">alex.chen@acme.com</div>
+              <div className="truncate text-sm font-semibold">{org}</div>
+              <div className="truncate text-xs text-muted-foreground">{ACCOUNT.email}</div>
             </div>
             <button
               aria-label="Log out"
