@@ -54,11 +54,12 @@ function WorkflowsTab() {
   if (workflows.length === 0) {
     return (
       <EmptyState
+        icon={<WorkflowIcon className="h-7 w-7" />}
         title="No workflows yet"
         description="Upload your first workflow to start mapping dependencies."
-        actionLabel="Upload a Workflow"
-        onAction={() => navigate({ to: "/workflow-recorder" })}
+        action={<Button onClick={() => navigate({ to: "/workflow-recorder" })}>Upload a Workflow</Button>}
       />
+
     );
   }
 
