@@ -242,9 +242,14 @@ function GuideCard({ guide, onDelete }: { guide: NodeFallbackGuide; onDelete: ()
   return (
     <Card hover={false} className="overflow-hidden">
       <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center justify-between p-4 text-left">
-        <div className="min-w-0">
+        <div class="min-w-0" className="min-w-0">
+          <div className="mb-1 flex items-center gap-2">
+            <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ring-1 ${guide.track === "policy" ? "bg-accent/15 text-accent ring-accent/40" : "bg-primary/15 text-primary ring-primary/40"}`}>
+              {guide.track === "policy" ? <><ScrollText className="h-3 w-3" /> Policy Compliance</> : <><ShieldAlert className="h-3 w-3" /> Node Failure</>}
+            </span>
+          </div>
           <h3 className="truncate font-display text-base font-bold">{guide.guide_title}</h3>
-          <p className="text-xs text-muted-foreground">{guide.nodeName} · v{guide.version} · {new Date(guide.generatedDate).toLocaleString()}</p>
+          <p className="text-xs text-muted-foreground">{guide.nodeName}{guide.policyName ? ` · ${guide.policyName}` : ""} · v{guide.version} · {new Date(guide.generatedDate).toLocaleString()}</p>
         </div>
         <ChevronDown className={`h-5 w-5 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
