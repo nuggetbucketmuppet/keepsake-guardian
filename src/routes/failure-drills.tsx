@@ -143,7 +143,7 @@ function RunDrill() {
     const passed = criticalDone && pct >= 60;
     const rec: DrillRecord = {
       id: uid(), name: scenario.scenario_title, dateRun: new Date().toISOString(),
-      agent, team, outageDuration: duration, mode, readinessScore: pct, grade: gradeFor(pct),
+      agent: downNames, team, outageDuration: duration, mode, readinessScore: pct, grade: gradeFor(pct),
       passed, scenario, completedTasks: completed,
     };
     setResult(rec);
