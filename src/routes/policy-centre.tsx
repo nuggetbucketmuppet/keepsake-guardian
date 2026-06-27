@@ -240,9 +240,10 @@ function PolicyCentre() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <PageHeader
-        title="Policy Centre"
+        title="Policy Compliance"
         subtitle="Upload or scrape compliance policies, then evaluate any workflow against them with an AI audit."
       />
+
 
       {/* Tabs */}
       <div className="mb-6 inline-flex rounded-lg border border-border bg-card p-1">
