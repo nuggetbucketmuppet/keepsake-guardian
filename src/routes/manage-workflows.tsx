@@ -209,12 +209,15 @@ function NodesTab() {
         <Button variant="outline" onClick={() => setShowTidy(true)}>
           <Sparkles className="h-4 w-4" /> Tidy nodes{orphans.length ? ` (${orphans.length})` : ""}
         </Button>
-        <button
-          onClick={() => setShowArchived((v) => !v)}
-          className={`shrink-0 rounded-md border px-3 py-1.5 text-xs font-semibold ${showArchived ? "border-primary bg-primary/10 text-foreground" : "border-border text-muted-foreground hover:text-foreground"}`}
+        <select
+          value={archiveView}
+          onChange={(e) => setArchiveView(e.target.value as "active" | "archived" | "all")}
+          className="shrink-0 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         >
-          {showArchived ? "Hide archived" : "Show archived"}
-        </button>
+          <option value="active">Active only</option>
+          <option value="archived">Archived only</option>
+          <option value="all">All (incl. archived)</option>
+        </select>
       </div>
 
 
