@@ -62,7 +62,7 @@ function Dashboard() {
   const activity: Activity[] = [
     ...workflows.slice(0, 4).map((w) => ({
       icon: Activity,
-      color: "#6c63ff",
+      color: "#2f9be0",
       text: `Workflow "${w.name}" recorded — resilience ${w.resilienceScore}%`,
       time: w.lastUpdated,
     })),
