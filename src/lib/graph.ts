@@ -246,3 +246,26 @@ export const NODE_LABELS: Record<NodeType, string> = {
   platform: "Platform / Service",
   human: "Staff / Position",
 };
+
+// Nodes with no edges at all (orphaned / not referenced by any workflow).
+export function orphanNodes(graph: DependencyGraph): GraphNode[] {
+  const connected = new Set<string>();
+  for (const e of graph.edges) { connected.add(e.source); connected.add(e.target); }
+  return graph.nodes.filter((n) => !connected.has(n.id));
+}
+
+// A compact text description of the graph for AI prompts.
+export function graphSummary(graph: DependencyGraph, onlyNodeIds?: Set<string>): string {
+  const nodes = (onlyNodeIds ? graph.nodes.filter((n) => onlyNodeIds.has(n.id)) : graph.nodes).filter((n) => !n.archived);
+  const idset = new Set(nodes.map((n) => n.id));
+  const nameOf = (id: string) => graph.nodes.find((n) => n.id === id)?.name ?? id;
+  const nodeLines = nodes
+    .map((n) => `- ${n.name} [${NODE_LABELS[n.type]}, ${downstreamCount(graph, n.id)} downstream deps, risk: ${n.riskLevel}]`)
+    .join("\n");
+  const edgeLines = graph.edges
+    .filter((e) => idset.has(e.source) && idset.has(e.target))
+    .map((e) => `- ${nameOf(e.source)} → ${nameOf(e.target)}${e.label ? ` (${e.label})` : ""}`)
+    .join("\n");
+  return `NODES:\n${nodeLines || "none"}\n\nCONNECTIONS:\n${edgeLines || "none"}`;
+}
+

@@ -15,6 +15,7 @@ import { Route as PolicyCentreRouteImport } from './routes/policy-centre'
 import { Route as ManageWorkflowsRouteImport } from './routes/manage-workflows'
 import { Route as FallbackGuidesRouteImport } from './routes/fallback-guides'
 import { Route as FailureDrillsRouteImport } from './routes/failure-drills'
+import { Route as EvaluateWorkflowsRouteImport } from './routes/evaluate-workflows'
 import { Route as DependencyMapRouteImport } from './routes/dependency-map'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as FallbackIdRouteImport } from './routes/fallback.$id'
@@ -51,6 +52,11 @@ const FallbackGuidesRoute = FallbackGuidesRouteImport.update({
 const FailureDrillsRoute = FailureDrillsRouteImport.update({
   id: '/failure-drills',
   path: '/failure-drills',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EvaluateWorkflowsRoute = EvaluateWorkflowsRouteImport.update({
+  id: '/evaluate-workflows',
+  path: '/evaluate-workflows',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DependencyMapRoute = DependencyMapRouteImport.update({
@@ -92,6 +98,7 @@ const ApiClaudeRoute = ApiClaudeRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dependency-map': typeof DependencyMapRoute
+  '/evaluate-workflows': typeof EvaluateWorkflowsRoute
   '/failure-drills': typeof FailureDrillsRoute
   '/fallback-guides': typeof FallbackGuidesRoute
   '/manage-workflows': typeof ManageWorkflowsRoute
@@ -107,6 +114,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dependency-map': typeof DependencyMapRoute
+  '/evaluate-workflows': typeof EvaluateWorkflowsRoute
   '/failure-drills': typeof FailureDrillsRoute
   '/fallback-guides': typeof FallbackGuidesRoute
   '/manage-workflows': typeof ManageWorkflowsRoute
@@ -123,6 +131,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dependency-map': typeof DependencyMapRoute
+  '/evaluate-workflows': typeof EvaluateWorkflowsRoute
   '/failure-drills': typeof FailureDrillsRoute
   '/fallback-guides': typeof FallbackGuidesRoute
   '/manage-workflows': typeof ManageWorkflowsRoute
@@ -140,6 +149,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dependency-map'
+    | '/evaluate-workflows'
     | '/failure-drills'
     | '/fallback-guides'
     | '/manage-workflows'
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/dependency-map'
+    | '/evaluate-workflows'
     | '/failure-drills'
     | '/fallback-guides'
     | '/manage-workflows'
@@ -170,6 +181,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/dependency-map'
+    | '/evaluate-workflows'
     | '/failure-drills'
     | '/fallback-guides'
     | '/manage-workflows'
@@ -186,6 +198,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DependencyMapRoute: typeof DependencyMapRoute
+  EvaluateWorkflowsRoute: typeof EvaluateWorkflowsRoute
   FailureDrillsRoute: typeof FailureDrillsRoute
   FallbackGuidesRoute: typeof FallbackGuidesRoute
   ManageWorkflowsRoute: typeof ManageWorkflowsRoute
@@ -243,6 +256,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FailureDrillsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/evaluate-workflows': {
+      id: '/evaluate-workflows'
+      path: '/evaluate-workflows'
+      fullPath: '/evaluate-workflows'
+      preLoaderRoute: typeof EvaluateWorkflowsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dependency-map': {
       id: '/dependency-map'
       path: '/dependency-map'
@@ -298,6 +318,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DependencyMapRoute: DependencyMapRoute,
+  EvaluateWorkflowsRoute: EvaluateWorkflowsRoute,
   FailureDrillsRoute: FailureDrillsRoute,
   FallbackGuidesRoute: FallbackGuidesRoute,
   ManageWorkflowsRoute: ManageWorkflowsRoute,

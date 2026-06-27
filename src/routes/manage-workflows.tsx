@@ -1,13 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
-  Pencil, Trash2, X, Search, Cpu, Server, User, Save, ChevronDown, Workflow as WorkflowIcon, Boxes,
+  Pencil, Trash2, X, Search, Cpu, Server, User, Save, ChevronDown, Workflow as WorkflowIcon, Boxes, Sparkles, ShieldCheck, Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, Card, Button, ScoreBadge, EmptyState } from "@/components/ui-kit";
 import { WorkflowForm } from "@/components/WorkflowForm";
-import { useWorkflows, deleteWorkflow } from "@/lib/store";
-import { useGraph, updateNode, removeNode, NODE_LABELS } from "@/lib/graph";
+import { useWorkflows, deleteWorkflow, useEvaluations, useDrills } from "@/lib/store";
+import { useGraph, updateNode, removeNode, orphanNodes, NODE_LABELS } from "@/lib/graph";
 import type { Workflow, GraphNode, NodeType } from "@/lib/types";
 
 export const Route = createFileRoute("/manage-workflows")({
@@ -44,12 +44,33 @@ function TabButton({ active, onClick, icon, children }: { active: boolean; onCli
   );
 }
 
+function Indicator({ icon, label, value }: { icon: React.ReactNode; label: string; value: number | null }) {
+  const color = value == null ? "text-muted-foreground" : value >= 75 ? "text-accent" : value >= 50 ? "text-amber-400" : "text-danger";
+  return (
+    <div className="flex flex-col items-center" title={label}>
+      <span className={`flex items-center gap-1 text-sm font-bold ${color}`}>{icon}{value == null ? "—" : value}</span>
+      <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</span>
+    </div>
+  );
+}
+
 // ============= Workflows tab =============
 function WorkflowsTab() {
   const navigate = useNavigate();
   const workflows = useWorkflows();
+  const evaluations = useEvaluations();
+  const drills = useDrills();
   const [editing, setEditing] = useState<Workflow | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Workflow | null>(null);
+
+  const complianceFor = (wf: Workflow): number | null => {
+    const e = evaluations.filter((x) => x.workflowId === wf.id).sort((a, b) => b.evaluatedDate.localeCompare(a.evaluatedDate))[0];
+    return e ? e.compliance_score : null;
+  };
+  const drillFor = (wf: Workflow): number | null => {
+    const d = drills.filter((x) => x.team === wf.department).sort((a, b) => b.dateRun.localeCompare(a.dateRun))[0];
+    return d ? d.readinessScore : null;
+  };
 
   if (workflows.length === 0) {
     return (
@@ -80,6 +101,10 @@ function WorkflowsTab() {
                 {wf.aiTool && wf.aiTool !== "—" && <span>· AI: {wf.aiTool}</span>}
               </div>
             </div>
+            <div className="flex items-center gap-3">
+              <Indicator icon={<ShieldCheck className="h-3.5 w-3.5" />} label="Compliance" value={complianceFor(wf)} />
+              <Indicator icon={<Zap className="h-3.5 w-3.5" />} label="Last drill" value={drillFor(wf)} />
+            </div>
             <div className="flex items-center gap-1">
               <button aria-label="Edit workflow" onClick={() => setEditing(wf)} className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground">
                 <Pencil className="h-4 w-4" />
@@ -91,6 +116,7 @@ function WorkflowsTab() {
           </Card>
         ))}
       </div>
+
 
       {editing && (
         <Modal title={`Edit — ${editing.name}`} onClose={() => setEditing(null)}>
@@ -134,10 +160,15 @@ function NodesTab() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | NodeType>("all");
   const [editing, setEditing] = useState<GraphNode | null>(null);
+  const [showTidy, setShowTidy] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
+
+  const orphans = useMemo(() => orphanNodes(graph).filter((n) => !n.archived), [graph]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return graph.nodes.filter((n) => {
+      if (!showArchived && n.archived) return false;
       if (filter !== "all" && n.type !== filter) return false;
       if (!q) return true;
       return (
@@ -147,7 +178,8 @@ function NodesTab() {
         (n.tags ?? []).some((t) => t.toLowerCase().includes(q))
       );
     });
-  }, [graph.nodes, query, filter]);
+  }, [graph.nodes, query, filter, showArchived]);
+
 
   return (
     <>
@@ -172,7 +204,17 @@ function NodesTab() {
             </button>
           ))}
         </div>
+        <Button variant="outline" onClick={() => setShowTidy(true)}>
+          <Sparkles className="h-4 w-4" /> Tidy nodes{orphans.length ? ` (${orphans.length})` : ""}
+        </Button>
+        <button
+          onClick={() => setShowArchived((v) => !v)}
+          className={`shrink-0 rounded-md border px-3 py-1.5 text-xs font-semibold ${showArchived ? "border-primary bg-primary/10 text-foreground" : "border-border text-muted-foreground hover:text-foreground"}`}
+        >
+          {showArchived ? "Hide archived" : "Show archived"}
+        </button>
       </div>
+
 
       {filtered.length === 0 ? (
         <EmptyState icon={<Search className="h-7 w-7" />} title="No matching nodes" description="Try a different search or filter." />
@@ -201,9 +243,60 @@ function NodesTab() {
       )}
 
       {editing && <NodeEditor node={editing} onClose={() => setEditing(null)} />}
+      {showTidy && <TidyModal orphans={orphans} onClose={() => setShowTidy(false)} />}
     </>
   );
 }
+
+function TidyModal({ orphans, onClose }: { orphans: GraphNode[]; onClose: () => void }) {
+  return (
+    <Modal title="Tidy nodes" onClose={onClose}>
+      {orphans.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No orphaned nodes — every node is referenced by at least one workflow connection. 🎉</p>
+      ) : (
+        <>
+          <p className="mb-4 text-sm text-muted-foreground">
+            These nodes aren't connected to any workflow. Archive them to hide from the live map, or delete them permanently.
+          </p>
+          <div className="mb-4 flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => { orphans.forEach((n) => updateNode(n.id, { archived: true })); toast.success(`Archived ${orphans.length} orphaned node(s).`); onClose(); }}
+            >
+              Archive all
+            </Button>
+            <Button
+              variant="danger"
+              onClick={() => { orphans.forEach((n) => removeNode(n.id)); toast.success(`Deleted ${orphans.length} orphaned node(s).`); onClose(); }}
+            >
+              <Trash2 className="h-4 w-4" /> Delete all
+            </Button>
+          </div>
+          <div className="max-h-72 space-y-2 overflow-y-auto">
+            {orphans.map((n) => (
+              <div key={n.id} className="flex items-center gap-3 rounded-md border border-border bg-secondary/30 p-3">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-secondary ring-1 ring-border">
+                  {n.icon ? <span className="text-base leading-none">{n.icon}</span> : TYPE_ICON[n.type]}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-semibold">{n.name}</div>
+                  <div className="text-xs text-muted-foreground">{NODE_LABELS[n.type]}</div>
+                </div>
+                <button aria-label="Archive node" onClick={() => { updateNode(n.id, { archived: true }); toast.success(`Archived "${n.name}".`); }} className="rounded-md px-2 py-1 text-xs font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground">
+                  Archive
+                </button>
+                <button aria-label="Delete node" onClick={() => { removeNode(n.id); toast.success(`Deleted "${n.name}".`); }} className="rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-danger">
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </Modal>
+  );
+}
+
 
 function NodeEditor({ node, onClose }: { node: GraphNode; onClose: () => void }) {
   const [name, setName] = useState(node.name);

@@ -1,11 +1,12 @@
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import {
-  FileText, Code2, Workflow as WorkflowIcon, Upload, X, Plus, ChevronDown, Info, Sparkles, Paperclip, Loader2,
+  FileText, Code2, Workflow as WorkflowIcon, Upload, X, Plus, ChevronDown, Info, Sparkles, Paperclip, Loader2, Search, Wand2, Check,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, Button, AiLoading, ErrorCard } from "@/components/ui-kit";
-import { parseIntake, detectPlatforms, parseFile } from "@/lib/claude";
+import { parseIntake, detectPlatforms, parseFile, examineWorkflow, autofillWorkflow } from "@/lib/claude";
+import type { NodeMatchSuggestion } from "@/lib/claude";
 import { mergeIntoGraph, NODE_LABELS, useGraph } from "@/lib/graph";
 import { saveWorkflow, updateWorkflow, uid } from "@/lib/store";
 import type { Department, Frequency, Classification, NodeType, Workflow } from "@/lib/types";
@@ -57,6 +58,69 @@ export function WorkflowForm({
   const [questions, setQuestions] = useState<string[]>([]);
   const [answers, setAnswers] = useState<Record<number, string>>({});
 
+  // Examine / autofill
+  const [examining, setExamining] = useState(false);
+  const [autofilling, setAutofilling] = useState(false);
+  const [nodeMatches, setNodeMatches] = useState<NodeMatchSuggestion[]>([]);
+  // per-match decision: "yes" reuses existing node, "no" creates a new node (with optional rename)
+  const [matchDecision, setMatchDecision] = useState<Record<number, "yes" | "no">>({});
+  const [matchNewName, setMatchNewName] = useState<Record<number, string>>({});
+
+  const addTagSilently = (name: string, type: NodeType) => {
+    setTags((prev) => prev.some((t) => t.name.toLowerCase() === name.toLowerCase()) ? prev : [...prev, { name, type }]);
+  };
+
+  const runExamine = async () => {
+    const content = mode === "code" ? code : description;
+    if (!content.trim()) {
+      toast.error("Add a description or code first so we can examine it.");
+      return;
+    }
+    setExamining(true);
+    try {
+      const existingNodeNames = graph.nodes.map((n) => n.name);
+      const res = await examineWorkflow({ description: content, existingNodeNames });
+      setQuestions(res.questions);
+      setAnswers({});
+      setNodeMatches(res.nodeMatches);
+      setMatchDecision({});
+      setMatchNewName({});
+      toast.success(`Examined — ${res.questions.length} question(s), ${res.nodeMatches.length} possible shared node(s).`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Examine failed.");
+    } finally {
+      setExamining(false);
+    }
+  };
+
+  const decideMatch = (i: number, decision: "yes" | "no", m: NodeMatchSuggestion) => {
+    setMatchDecision((d) => ({ ...d, [i]: decision }));
+    if (decision === "yes") addTagSilently(m.existingNodeName, m.type);
+  };
+
+  const runAutofill = async () => {
+    const content = mode === "code" ? code : description;
+    if (!content.trim()) {
+      toast.error("Add a description or code first so we can autofill the details.");
+      return;
+    }
+    setAutofilling(true);
+    try {
+      const res = await autofillWorkflow(content);
+      if (res.name && !name) setName(res.name);
+      if (DEPARTMENTS.includes(res.department as Department)) setDepartment(res.department as Department);
+      if (FREQUENCIES.includes(res.frequency as Frequency)) setFrequency(res.frequency as Frequency);
+      if (CLASSIFICATIONS.includes(res.classification as Classification)) setClassification(res.classification as Classification);
+      if (["Yes", "Partially", "No"].includes(res.aiPowered)) setAiPowered(res.aiPowered);
+      for (const p of res.platforms) addTagSilently(p.name, p.type);
+      toast.success("Workflow details autofilled — review before saving.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Autofill failed.");
+    } finally {
+      setAutofilling(false);
+    }
+  };
+
   const runDetection = async () => {
     const content = mode === "code" ? code : description;
     if (!content.trim()) {
@@ -85,6 +149,7 @@ export function WorkflowForm({
       setDetecting(false);
     }
   };
+
 
   const workatoConnected =
     typeof window !== "undefined" && localStorage.getItem("keepsake.workato.connected") === "true";
@@ -147,7 +212,28 @@ export function WorkflowForm({
       .map((q, i) => (answers[i]?.trim() ? `Q: ${q}\nA: ${answers[i].trim()}` : null))
       .filter(Boolean)
       .join("\n");
-    const content = clarifications ? `${baseContent}\n\nCLARIFICATIONS:\n${clarifications}` : baseContent;
+    // Shared-node confirmations from the Examine step.
+    const matchNotes = nodeMatches
+      .map((m, i) => {
+        const d = matchDecision[i];
+        if (d === "yes") return `"${m.detectedName}" is the same as existing node "${m.existingNodeName}".`;
+        if (d === "no") {
+          const nn = matchNewName[i]?.trim();
+          return `"${m.detectedName}" is a NEW node${nn ? ` named "${nn}"` : ""}, distinct from "${m.existingNodeName}".`;
+        }
+        return null;
+      })
+      .filter(Boolean)
+      .join("\n");
+    // Add explicitly-named new nodes as tags so they enter the graph.
+    nodeMatches.forEach((m, i) => {
+      if (matchDecision[i] === "no") {
+        const nn = matchNewName[i]?.trim();
+        if (nn && !tags.some((t) => t.name.toLowerCase() === nn.toLowerCase())) tags.push({ name: nn, type: m.type });
+      }
+    });
+    let content = clarifications ? `${baseContent}\n\nCLARIFICATIONS:\n${clarifications}` : baseContent;
+    if (matchNotes) content = `${content}\n\nSHARED NODE NOTES:\n${matchNotes}`;
     if (!content.trim() && tags.length === 0) {
       toast.error("Describe the workflow or add at least one platform tag.");
       return;
@@ -307,7 +393,54 @@ export function WorkflowForm({
         </Card>
       )}
 
-      {/* Shared lower fields */}
+      {/* Examine + Autofill */}
+      <Card hover={false} className="overflow-hidden p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-semibold">Examine your input</h3>
+            <p className="text-xs text-muted-foreground">Generate clarifying questions, find nodes shared with other workflows, or auto-fill the form.</p>
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <Button variant="outline" onClick={runExamine} disabled={examining}>
+              {examining ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              {examining ? "Examining…" : "Examine"}
+            </Button>
+            <Button variant="outline" onClick={runAutofill} disabled={autofilling}>
+              {autofilling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+              {autofilling ? "Autofilling…" : "Autofill details"}
+            </Button>
+          </div>
+        </div>
+
+        {nodeMatches.length > 0 && (
+          <div className="mt-4 space-y-2">
+            <div className="flex items-center gap-2 text-sm font-semibold"><Info className="h-4 w-4 text-accent" /> Possible shared nodes</div>
+            {nodeMatches.map((m, i) => (
+              <div key={i} className="rounded-lg border border-border bg-secondary/30 p-3">
+                <p className="text-xs text-foreground">{m.question}</p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <Button variant={matchDecision[i] === "yes" ? "primary" : "outline"} className="!py-1 !px-2.5 text-xs" onClick={() => decideMatch(i, "yes", m)}>
+                    <Check className="h-3.5 w-3.5" /> Yes — same as "{m.existingNodeName}"
+                  </Button>
+                  <Button variant={matchDecision[i] === "no" ? "primary" : "outline"} className="!py-1 !px-2.5 text-xs" onClick={() => decideMatch(i, "no", m)}>
+                    <X className="h-3.5 w-3.5" /> No — it's new
+                  </Button>
+                  {matchDecision[i] === "no" && (
+                    <input
+                      value={matchNewName[i] ?? m.detectedName}
+                      onChange={(e) => setMatchNewName((s) => ({ ...s, [i]: e.target.value }))}
+                      placeholder="Name the new node"
+                      className="inp min-w-[160px] flex-1 !py-1"
+                    />
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+
       <Card hover={false} className="overflow-hidden p-5">
         <h3 className="mb-4 font-display text-sm font-bold uppercase tracking-wide text-muted-foreground">Workflow details</h3>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

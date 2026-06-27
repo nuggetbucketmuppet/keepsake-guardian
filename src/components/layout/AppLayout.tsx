@@ -14,6 +14,7 @@ import {
   LogOut,
   ShieldCheck,
   HelpCircle,
+  Gauge,
 } from "lucide-react";
 import { OnboardingProvider, useOnboarding } from "@/components/Onboarding";
 
@@ -37,7 +38,8 @@ const NAV = [
   { to: "/fallback-guides", label: "Fallback Guides", icon: BookOpen },
   { to: "/dependency-map", label: "Dependency Map", icon: GitFork },
   { to: "/failure-drills", label: "Failure Drills", icon: Zap },
-  { to: "/policy-centre", label: "Policy Centre", icon: ShieldCheck },
+  { to: "/evaluate-workflows", label: "Evaluate Workflows", icon: Gauge },
+  { to: "/policy-centre", label: "Policy Compliance", icon: ShieldCheck },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
