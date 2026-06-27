@@ -52,7 +52,7 @@ function SettingsPage() {
           </div>
         </Card>
 
-        <Button variant="accent" onClick={() => toast.success("Settings saved.")}><Save className="h-4 w-4" /> Save Settings</Button>
+        <Button variant="accent" onClick={() => { setOrg(orgDraft.trim() || ACCOUNT.name); toast.success("Settings saved."); }}><Save className="h-4 w-4" /> Save Settings</Button>
       </div>
     </div>
   );
