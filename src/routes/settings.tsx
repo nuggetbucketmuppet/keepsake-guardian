@@ -14,9 +14,6 @@ const inputCls =
 
 function SettingsPage() {
   const [org, setOrg] = useState("Northwind Enterprises");
-  const [aging, setAging] = useState(15);
-  const [warning, setWarning] = useState(30);
-  const [critical, setCritical] = useState(60);
   const [notifyDecay, setNotifyDecay] = useState(true);
   const [notifyDrills, setNotifyDrills] = useState(true);
   const [autoPause, setAutoPause] = useState(true);
