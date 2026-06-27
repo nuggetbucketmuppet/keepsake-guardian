@@ -231,14 +231,24 @@ function NodesTab() {
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-secondary text-foreground ring-1 ring-border">
                 {n.icon ? <span className="text-lg leading-none">{n.icon}</span> : TYPE_ICON[n.type]}
               </span>
+              <div class="min-w-0 flex-1">
+              </div>
               <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-semibold">{n.name}</div>
+                <div className="flex items-center gap-2">
+                  <span className="truncate text-sm font-semibold">{n.name}</span>
+                  {n.archived && <span className="shrink-0 rounded bg-secondary px-1.5 py-0.5 text-[10px] font-bold uppercase text-muted-foreground">Archived</span>}
+                </div>
                 <div className="truncate text-xs text-muted-foreground">
                   {NODE_LABELS[n.type]}
                   {n.contactEmail ? ` · ${n.contactEmail}` : ""}
                   {n.contactPhone ? ` · ${n.contactPhone}` : ""}
                 </div>
               </div>
+              {n.archived && (
+                <button aria-label="Restore node" onClick={() => { updateNode(n.id, { archived: false }); toast.success(`Restored "${n.name}".`); }} className="rounded-md px-2 py-1 text-xs font-semibold text-accent hover:bg-secondary">
+                  Restore
+                </button>
+              )}
               <button aria-label="Edit node" onClick={() => setEditing(n)} className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground">
                 <Pencil className="h-4 w-4" />
               </button>
