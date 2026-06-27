@@ -35,10 +35,10 @@ const NAV = [
   { to: "/", label: "Dashboard", icon: Home },
   { to: "/workflow-recorder", label: "Upload a Workflow", icon: Activity },
   { to: "/manage-workflows", label: "Manage Workflows", icon: ListChecks },
-  { to: "/fallback-guides", label: "Fallback Guides", icon: BookOpen },
-  { to: "/dependency-map", label: "Dependency Map", icon: GitFork },
-  { to: "/failure-drills", label: "Failure Drills", icon: Zap },
   { to: "/evaluate-workflows", label: "Evaluate Workflows", icon: Gauge },
+  { to: "/dependency-map", label: "Dependency Map", icon: GitFork },
+  { to: "/fallback-guides", label: "Fallback Guides", icon: BookOpen },
+  { to: "/failure-drills", label: "Failure Drills", icon: Zap },
   { to: "/policy-centre", label: "Policy Compliance", icon: ShieldCheck },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
