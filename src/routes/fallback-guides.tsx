@@ -1,155 +1,224 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
 import {
-  ShieldAlert, BookOpen, Download, Link2, RefreshCw, ChevronDown, Sparkles, Plus, Check, Trash2, ScrollText,
+  BookOpen, Sparkles, Check, Search, X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, Card, Button, AiLoading, ErrorCard, EmptyState } from "@/components/ui-kit";
 import { useGraph, connectedNodes, updateNode, NODE_LABELS } from "@/lib/graph";
+import { useWorkflows, uid } from "@/lib/store";
 import { suggestScenarios, generateNodeGuide } from "@/lib/claude";
 import { putGuide, getAllGuides, deleteGuide } from "@/lib/idb";
-import { uid } from "@/lib/store";
-import { buildGuidePrintHtml } from "@/lib/guide-print";
-import type { NodeFallbackGuide, GraphNode } from "@/lib/types";
+import type { NodeFallbackGuide, DependencyGraph, GraphNode } from "@/lib/types";
 
 export const Route = createFileRoute("/fallback-guides")({
-  validateSearch: (s: Record<string, unknown>): { node?: string } => ({ node: typeof s.node === "string" ? s.node : undefined }),
+  validateSearch: (s: Record<string, unknown>): { node?: string; workflow?: string } => ({
+    node: typeof s.node === "string" ? s.node : undefined,
+    workflow: typeof s.workflow === "string" ? s.workflow : undefined,
+  }),
   head: () => ({ meta: [{ title: "Fallback Guides — KeepSake" }] }),
   component: FallbackGuides,
 });
 
+const nodeWorkflowIds = (n: GraphNode): string[] => n.workflowIds ?? (n.workflowId ? [n.workflowId] : []);
+
 function FallbackGuides() {
-  const { node: nodeParam } = Route.useSearch();
+  const { node: nodeParam, workflow: workflowParam } = Route.useSearch();
   const graph = useGraph();
   const [guides, setGuides] = useState<NodeFallbackGuide[]>([]);
-  const [selectedNodeId, setSelectedNodeId] = useState<string>(nodeParam ?? "");
 
   const refresh = () => getAllGuides().then((g) => setGuides(g.sort((a, b) => b.generatedDate.localeCompare(a.generatedDate))));
   useEffect(() => { refresh(); }, []);
-  useEffect(() => { if (nodeParam) setSelectedNodeId(nodeParam); }, [nodeParam]);
-
-  const node = graph.nodes.find((n) => n.id === selectedNodeId);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
       <PageHeader
         title="Fallback Guides"
-        subtitle="When any node fails, have a human-ready plan. Guides are saved offline so they work even when AI and cloud services are down."
+        subtitle="Human-ready plans for when any node fails. Saved offline so they work when AI and cloud are down."
       />
 
-      <Tabs.Root defaultValue="generate">
+      <Tabs.Root defaultValue={workflowParam || nodeParam ? "saved" : "generate"}>
         <Tabs.List className="mb-6 inline-flex gap-1 rounded-md border border-border bg-card p-1">
-          {[{ v: "generate", label: "Generate a Guide" }, { v: "saved", label: `Saved Guides (${guides.length})` }].map((t) => (
+          {[{ v: "generate", label: "Generate Guides" }, { v: "saved", label: `Saved (${guides.length})` }].map((t) => (
             <Tabs.Trigger key={t.v} value={t.v} className="rounded px-4 py-1.5 text-sm font-semibold text-muted-foreground transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">{t.label}</Tabs.Trigger>
           ))}
         </Tabs.List>
 
         <Tabs.Content value="generate">
-          <Card hover={false} className="mb-6 overflow-hidden p-5">
-            <label className="mb-2 block text-sm font-semibold">Generate a Node Failure Guide</label>
-            <select value={selectedNodeId} onChange={(e) => setSelectedNodeId(e.target.value)} className="mb-2 w-full rounded-md border border-input bg-secondary/40 px-3 py-2 text-sm">
-              <option value="">Select a node to prepare for…</option>
-              {graph.nodes.map((n) => <option key={n.id} value={n.id}>{n.name} ({NODE_LABELS[n.type]})</option>)}
-            </select>
-            {node ? <Generator key={node.id} node={node} graph={graph} onGenerated={refresh} /> : (
-              <p className="mt-3 text-sm text-muted-foreground">Pick any platform, service, AI, or staff node above to build a human fallback plan for when it goes offline.</p>
-            )}
-          </Card>
+          <MultiGenerator graph={graph} onGenerated={refresh} initialWorkflow={workflowParam} initialNode={nodeParam} />
         </Tabs.Content>
 
         <Tabs.Content value="saved">
-          {guides.length === 0 ? (
-            <EmptyState icon={<BookOpen className="h-6 w-6" />} title="No guides yet" description="Select a node in the Generate tab and create your first fallback guide." />
-          ) : (
-            <div className="space-y-4">
-              {guides.map((g) => <GuideCard key={g.id} guide={g} onDelete={async () => { await deleteGuide(g.id); refresh(); toast.success("Guide deleted."); }} />)}
-            </div>
-          )}
+          <SavedGuides guides={guides} graph={graph} initialWorkflow={workflowParam} onRefresh={refresh} />
         </Tabs.Content>
       </Tabs.Root>
     </div>
   );
 }
 
-
-function Generator({ node, graph, onGenerated }: { node: GraphNode; graph: ReturnType<typeof useGraph>; onGenerated: () => void }) {
-  const conn = connectedNodes(graph, node.id);
-  const connectedNames = [...conn.upstream, ...conn.downstream].map((n) => n.name);
-  const [scenarios, setScenarios] = useState<string[]>([]);
-  const [selected, setSelected] = useState<string[]>([]);
-  const [custom, setCustom] = useState("");
-  const [loadingScn, setLoadingScn] = useState(false);
-  const [generating, setGenerating] = useState(false);
+function MultiGenerator({ graph, onGenerated, initialWorkflow, initialNode }: { graph: DependencyGraph; onGenerated: () => void; initialWorkflow?: string; initialNode?: string }) {
+  const workflows = useWorkflows();
+  const [scope, setScope] = useState(initialWorkflow ?? "__all__");
+  const [selected, setSelected] = useState<string[]>(initialNode ? [initialNode] : []);
+  const [running, setRunning] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number; current: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const loadScenarios = async () => {
-    setLoadingScn(true);
-    setError(null);
-    try {
-      const s = await suggestScenarios(node.name, NODE_LABELS[node.type], connectedNames);
-      setScenarios(s);
-      setSelected(s);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to suggest scenarios.");
-    } finally {
-      setLoadingScn(false);
-    }
-  };
-  useEffect(() => { loadScenarios(); /* eslint-disable-next-line */ }, []);
+  const available = useMemo(
+    () => graph.nodes.filter((n) => !n.archived && (scope === "__all__" || nodeWorkflowIds(n).includes(scope))),
+    [graph.nodes, scope],
+  );
 
-  const toggle = (s: string) => setSelected((cur) => cur.includes(s) ? cur.filter((x) => x !== s) : [...cur, s]);
-  const addCustom = () => { const v = custom.trim(); if (!v) return; setScenarios((s) => [...s, v]); setSelected((s) => [...s, v]); setCustom(""); };
+  // Drop selections that fall outside the current scope.
+  useEffect(() => {
+    setSelected((cur) => cur.filter((id) => available.some((n) => n.id === id)));
+  }, [available]);
+
+  const toggle = (id: string) => setSelected((cur) => cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]);
+  const allIds = available.map((n) => n.id);
+  const allSelected = allIds.length > 0 && allIds.every((id) => selected.includes(id));
 
   const generate = async () => {
-    if (selected.length === 0) { toast.error("Select at least one scenario."); return; }
-    setGenerating(true);
-    setError(null);
+    if (selected.length === 0) { toast.error("Select at least one node."); return; }
+    setRunning(true); setError(null);
+    let made = 0;
     try {
-      const result = await generateNodeGuide({
-        nodeName: node.name, nodeType: NODE_LABELS[node.type], connectedNodes: connectedNames, scenarios: selected,
-      });
-      const guide: NodeFallbackGuide = { ...result, id: uid(), nodeId: node.id, nodeName: node.name, version: 1, generatedDate: new Date().toISOString() };
-      await putGuide(guide);
-      updateNode(node.id, { hasGuide: true });
-      toast.success("Guide generated and saved offline.");
+      for (let i = 0; i < selected.length; i++) {
+        const node = graph.nodes.find((n) => n.id === selected[i]);
+        if (!node) continue;
+        setProgress({ done: i, total: selected.length, current: node.name });
+        const conn = connectedNodes(graph, node.id);
+        const connectedNames = [...conn.upstream, ...conn.downstream].map((n) => n.name);
+        let scenarios: string[] = [];
+        try { scenarios = await suggestScenarios(node.name, NODE_LABELS[node.type], connectedNames); } catch { /* fall back below */ }
+        if (scenarios.length === 0) scenarios = [`What if ${node.name} goes offline?`];
+        const result = await generateNodeGuide({ nodeName: node.name, nodeType: NODE_LABELS[node.type], connectedNodes: connectedNames, scenarios });
+        const guide: NodeFallbackGuide = { ...result, id: uid(), nodeId: node.id, nodeName: node.name, version: 1, generatedDate: new Date().toISOString() };
+        await putGuide(guide);
+        updateNode(node.id, { hasGuide: true });
+        made++;
+      }
+      setProgress(null);
+      toast.success(`Generated ${made} guide${made === 1 ? "" : "s"} and saved offline.`);
       onGenerated();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to generate guide.");
+      setError(e instanceof Error ? e.message : "Failed to generate guides.");
     } finally {
-      setGenerating(false);
+      setRunning(false);
+      setProgress(null);
     }
   };
 
   return (
-    <div className="mt-4 rounded-lg border border-border bg-secondary/20 p-4">
+    <Card hover={false} className="overflow-hidden p-5">
+      <label className="mb-1 block text-sm font-semibold">Workflow scope</label>
+      <select value={scope} onChange={(e) => setScope(e.target.value)} className="mb-4 w-full rounded-md border border-input bg-secondary/40 px-3 py-2 text-sm">
+        <option value="__all__">All workflows</option>
+        {workflows.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
+      </select>
+
       <div className="mb-2 flex items-center justify-between">
-        <h4 className="text-sm font-semibold">Suggested scenarios for "{node.name}"</h4>
-        <Button variant="ghost" className="shrink-0 px-2 py-1 text-xs" onClick={loadScenarios}><RefreshCw className="h-3.5 w-3.5" /> Refresh</Button>
-      </div>
-      {loadingScn ? (
-        <p className="text-xs text-muted-foreground">Suggesting failure scenarios…</p>
-      ) : (
-        <div className="space-y-1.5">
-          {scenarios.map((s) => (
-            <button key={s} onClick={() => toggle(s)} className={`flex w-full items-center gap-2 rounded-md border px-3 py-2 text-left text-xs transition-colors ${selected.includes(s) ? "border-primary bg-primary/10" : "border-border"}`}>
-              <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${selected.includes(s) ? "border-primary bg-primary" : "border-border"}`}>{selected.includes(s) && <Check className="h-3 w-3 text-primary-foreground" />}</span>
-              {s}
-            </button>
-          ))}
-        </div>
-      )}
-      <div className="mt-2 flex gap-2">
-        <input value={custom} onChange={(e) => setCustom(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustom(); } }} placeholder="Add a custom scenario…" className="min-w-0 flex-1 rounded-md border border-input bg-secondary/40 px-3 py-2 text-xs" />
-        <Button variant="outline" className="shrink-0" onClick={addCustom}><Plus className="h-4 w-4" /></Button>
-      </div>
-      {error && <div className="mt-3"><ErrorCard message={error} onRetry={generate} /></div>}
-      <div className="mt-3">
-        {generating ? <AiLoading message="Drafting your fallback guide with GPT-4o…" /> : (
-          <Button className="w-full" onClick={generate}><Sparkles className="h-4 w-4" /> Generate Guide ({selected.length} scenario{selected.length === 1 ? "" : "s"})</Button>
+        <label className="text-sm font-semibold">Select nodes to prepare for ({selected.length})</label>
+        {available.length > 0 && (
+          <button onClick={() => setSelected(allSelected ? [] : allIds)} className="text-xs font-semibold text-accent hover:underline">
+            {allSelected ? "Clear all" : "Select all"}
+          </button>
         )}
       </div>
-    </div>
+
+      {available.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No nodes in this scope. Upload a workflow first.</p>
+      ) : (
+        <div className="max-h-72 space-y-1.5 overflow-y-auto pr-1">
+          {available.map((n) => {
+            const on = selected.includes(n.id);
+            return (
+              <button key={n.id} onClick={() => toggle(n.id)} className={`flex w-full items-center gap-2 rounded-md border px-3 py-2 text-left text-sm transition-colors ${on ? "border-primary bg-primary/10" : "border-border"}`}>
+                <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${on ? "border-primary bg-primary" : "border-border"}`}>{on && <Check className="h-3 w-3 text-primary-foreground" />}</span>
+                <span className="min-w-0 flex-1 truncate font-medium">{n.name}</span>
+                <span className="shrink-0 text-[10px] uppercase tracking-wide text-muted-foreground">{NODE_LABELS[n.type]}</span>
+                {n.hasGuide && <span className="shrink-0 rounded bg-accent/15 px-1.5 py-0.5 text-[10px] font-bold text-accent">Has guide</span>}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {error && <div className="mt-3"><ErrorCard message={error} onRetry={generate} /></div>}
+
+      <div className="mt-4">
+        {running ? (
+          <AiLoading message={progress ? `Drafting guide ${progress.done + 1}/${progress.total}: ${progress.current}…` : "Preparing…"} />
+        ) : (
+          <Button className="w-full" onClick={generate} disabled={selected.length === 0}>
+            <Sparkles className="h-4 w-4" /> Generate {selected.length || ""} Guide{selected.length === 1 ? "" : "s"}
+          </Button>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+function SavedGuides({ guides, graph, initialWorkflow, onRefresh }: { guides: NodeFallbackGuide[]; graph: DependencyGraph; initialWorkflow?: string; onRefresh: () => void }) {
+  const workflows = useWorkflows();
+  const [query, setQuery] = useState("");
+  const [wfFilter, setWfFilter] = useState(initialWorkflow ?? "__all__");
+  const [nodeFilter, setNodeFilter] = useState("__all__");
+
+  // Nodes that actually have guides, for the node filter dropdown.
+  const guideNodeIds = useMemo(() => new Set(guides.map((g) => g.nodeId).filter(Boolean) as string[]), [guides]);
+  const guideNodes = graph.nodes.filter((n) => guideNodeIds.has(n.id));
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return guides.filter((g) => {
+      if (nodeFilter !== "__all__" && g.nodeId !== nodeFilter) return false;
+      if (wfFilter !== "__all__") {
+        const node = graph.nodes.find((n) => n.id === g.nodeId);
+        if (!node || !nodeWorkflowIds(node).includes(wfFilter)) return false;
+      }
+      if (!q) return true;
+      return g.guide_title.toLowerCase().includes(q) || g.nodeName.toLowerCase().includes(q);
+    });
+  }, [guides, query, wfFilter, nodeFilter, graph.nodes]);
+
+  const hasActiveFilter = query || wfFilter !== "__all__" || nodeFilter !== "__all__";
+
+  if (guides.length === 0) {
+    return <EmptyState icon={<BookOpen className="h-6 w-6" />} title="No guides yet" description="Select nodes in the Generate tab and create your first fallback guides." />;
+  }
+
+  return (
+    <>
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <div className="relative min-w-[180px] flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search guides…" className="w-full rounded-md border border-input bg-secondary/40 py-2 pl-9 pr-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
+        </div>
+        <select value={wfFilter} onChange={(e) => setWfFilter(e.target.value)} className="shrink-0 rounded-md border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground">
+          <option value="__all__">All workflows</option>
+          {workflows.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
+        </select>
+        <select value={nodeFilter} onChange={(e) => setNodeFilter(e.target.value)} className="shrink-0 rounded-md border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground">
+          <option value="__all__">All nodes</option>
+          {guideNodes.map((n) => <option key={n.id} value={n.id}>{n.name}</option>)}
+        </select>
+        {hasActiveFilter && (
+          <button onClick={() => { setQuery(""); setWfFilter("__all__"); setNodeFilter("__all__"); }} className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border px-2.5 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground">
+            <X className="h-3.5 w-3.5" /> Clear
+          </button>
+        )}
+      </div>
+
+      {filtered.length === 0 ? (
+        <EmptyState icon={<Search className="h-6 w-6" />} title="No matching guides" description="Try a different search or filter." />
+      ) : (
+        <div className="space-y-4">
+          {filtered.map((g) => <GuideCard key={g.id} guide={g} onDelete={async () => { await deleteGuide(g.id); onRefresh(); toast.success("Guide deleted."); }} />)}
+        </div>
+      )}
+    </>
   );
 }
 
