@@ -47,6 +47,42 @@ function WorkflowUpload() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // platform auto-detection + clarifying questions
+  const graph = useGraph();
+  const [detecting, setDetecting] = useState(false);
+  const [questions, setQuestions] = useState<string[]>([]);
+  const [answers, setAnswers] = useState<Record<number, string>>({});
+
+  const runDetection = async () => {
+    const content = mode === "code" ? code : description;
+    if (!content.trim()) {
+      toast.error("Add a description or code first so we can detect platforms.");
+      return;
+    }
+    setDetecting(true);
+    try {
+      const existingNodeNames = graph.nodes.map((n) => n.name);
+      const res = await detectPlatforms({ description: content, existingNodeNames });
+      // merge suggested platforms into tags (dedupe by name)
+      setTags((prev) => {
+        const next = [...prev];
+        for (const p of res.platforms) {
+          if (!next.some((t) => t.name.toLowerCase() === p.name.toLowerCase())) {
+            next.push({ name: p.name, type: p.type });
+          }
+        }
+        return next;
+      });
+      setQuestions(res.questions);
+      setAnswers({});
+      toast.success(`Detected ${res.platforms.length} node(s). Answer the questions below to refine.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Detection failed.");
+    } finally {
+      setDetecting(false);
+    }
+  };
+
   const workatoConnected =
     typeof window !== "undefined" && localStorage.getItem("keepsake.workato.connected") === "true";
 
