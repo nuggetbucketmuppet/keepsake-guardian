@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { differenceInDays, format, formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
 import {
@@ -16,8 +16,9 @@ import {
 } from "lucide-react";
 import { PulseRing } from "@/components/PulseRing";
 import { Card, PageHeader, StatCard } from "@/components/ui-kit";
-import { DonutGauge, AreaTrend } from "@/components/charts";
-import { useWorkflows, useGuides, useDrills } from "@/lib/store";
+import { DonutGauge } from "@/components/charts";
+import { useWorkflows, useGuides, useDrills, useEvaluations } from "@/lib/store";
+import { useGraph, downstreamCount, NODE_LABELS } from "@/lib/graph";
 
 export const Route = createFileRoute("/")({
   head: () => ({
