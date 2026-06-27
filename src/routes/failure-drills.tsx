@@ -70,9 +70,11 @@ type Phase = "config" | "loading" | "error" | "active" | "results";
 
 function RunDrill() {
   const workflows = useWorkflows();
-  const agents = useMemo(() => Array.from(new Set(workflows.map((w) => w.aiTool))), [workflows]);
+  const graph = useGraph();
+  const search = Route.useSearch();
 
-  const [agent, setAgent] = useState("");
+  // Candidates are ALL nodes — platforms, services, AI, and human staff.
+  const [downNodeIds, setDownNodeIds] = useState<string[]>([]);
   const [affected, setAffected] = useState<string[]>([]);
   const [duration, setDuration] = useState("1 day");
   const [mode, setMode] = useState("Guided");
@@ -89,7 +91,16 @@ function RunDrill() {
   const [debrief, setDebrief] = useState("");
   const [debriefLoading, setDebriefLoading] = useState(false);
 
-  const relatedWorkflows = useMemo(() => workflows.filter((w) => w.aiTool === agent), [workflows, agent]);
+  // Preselect nodes sent from the Dependency Map ("Send to Failure Drill")
+  useEffect(() => {
+    if (search.nodes) {
+      const ids = search.nodes.split(",").filter(Boolean);
+      if (ids.length) setDownNodeIds(ids);
+    }
+  }, [search.nodes]);
+
+  const downNodes = useMemo(() => graph.nodes.filter((n) => downNodeIds.includes(n.id)), [graph, downNodeIds]);
+  const downNames = downNodes.map((n) => n.name).join(", ");
 
   // timer
   useEffect(() => {
@@ -99,11 +110,11 @@ function RunDrill() {
   }, [phase]);
 
   const generate = async () => {
-    if (!agent) return toast.error("Select an AI agent to simulate.");
+    if (downNodeIds.length === 0) return toast.error("Select at least one node to take down.");
     if (!team.trim()) return toast.error("Enter a target team to assess.");
     setPhase("loading");
     try {
-      const sc = await generateDrill({ agent, affectedWorkflows: affected, outageDuration: duration, mode, team });
+      const sc = await generateDrill({ agent: downNames, downedNodes: downNodes.map((n) => ({ name: n.name, type: n.type })), affectedWorkflows: affected, outageDuration: duration, mode, team });
       setScenario(sc);
       setCompleted([]);
       setEvidence({});
@@ -116,6 +127,7 @@ function RunDrill() {
       setPhase("error");
     }
   };
+
 
   const score = useMemo(() => {
     if (!scenario) return 0;
