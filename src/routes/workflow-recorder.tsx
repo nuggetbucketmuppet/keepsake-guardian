@@ -111,7 +111,12 @@ function WorkflowUpload() {
       toast.error("Give your workflow a name first.");
       return;
     }
-    const content = mode === "code" ? code : description;
+    const baseContent = mode === "code" ? code : description;
+    const clarifications = questions
+      .map((q, i) => (answers[i]?.trim() ? `Q: ${q}\nA: ${answers[i].trim()}` : null))
+      .filter(Boolean)
+      .join("\n");
+    const content = clarifications ? `${baseContent}\n\nCLARIFICATIONS:\n${clarifications}` : baseContent;
     if (!content.trim() && tags.length === 0) {
       toast.error("Describe the workflow or add at least one platform tag.");
       return;
