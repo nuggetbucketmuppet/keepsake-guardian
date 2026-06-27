@@ -174,6 +174,7 @@ const TYPE_ICON: Record<NodeType, React.ReactNode> = {
 };
 
 function NodesTab() {
+  const navigate = useNavigate();
   const graph = useGraph();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | NodeType>("all");
