@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { PulseRing } from "@/components/PulseRing";
 import { Card, PageHeader, StatCard } from "@/components/ui-kit";
+import { DonutGauge, AreaTrend } from "@/components/charts";
 import { useWorkflows, useGuides, useDrills } from "@/lib/store";
 
 export const Route = createFileRoute("/")({
@@ -97,6 +98,18 @@ function Dashboard() {
     { to: "/fallback-guides", icon: BookOpen, title: "Fallback Guides", desc: "Human-ready plans for when nodes fail.", glow: "accent" as const },
   ];
 
+  // Telemetry-style metrics for the gauges + trend panel.
+  const guideCoverage = workflows.length
+    ? Math.round((new Set(guides.map((g) => g.workflowName)).size / workflows.length) * 100)
+    : 0;
+  const drillReadiness = drills.length
+    ? Math.round(drills.reduce((s, d) => s + d.readinessScore, 0) / drills.length)
+    : 0;
+  const resilienceTrend = [...workflows]
+    .sort((a, b) => +new Date(a.lastUpdated) - +new Date(b.lastUpdated))
+    .map((w, i) => ({ label: `WF${i + 1}`, value: w.resilienceScore }));
+
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <PageHeader
@@ -153,6 +166,42 @@ function Dashboard() {
           </p>
         </div>
       </Card>
+
+      {/* Telemetry: live gauges + resilience trend */}
+      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <Card hover={false} className="lg:col-span-1">
+          <div className="border-b border-border px-5 py-3.5">
+            <h2 className="font-display text-sm font-bold uppercase tracking-wide text-muted-foreground">
+              Live Readiness
+            </h2>
+          </div>
+          <div className="grid grid-cols-3 gap-2 px-4 py-6">
+            <DonutGauge value={avgResilience} size={96} label="Resilience" />
+            <DonutGauge value={guideCoverage} size={96} label="Guide Cover" color="var(--accent)" />
+            <DonutGauge value={drillReadiness} size={96} label="Drill Ready" color="var(--primary)" />
+          </div>
+        </Card>
+
+        <Card hover={false} className="lg:col-span-2">
+          <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
+            <h2 className="font-display text-sm font-bold uppercase tracking-wide text-muted-foreground">
+              Resilience by Workflow
+            </h2>
+            <span className="font-mono text-[11px] text-muted-foreground">Score 0–100</span>
+          </div>
+          <div className="px-3 py-5">
+            {resilienceTrend.length > 1 ? (
+              <AreaTrend data={resilienceTrend} color="var(--accent)" unit="%" />
+            ) : (
+              <div className="flex h-[240px] items-center justify-center text-sm text-muted-foreground">
+                Record more workflows to see the resilience trend.
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
+
+
 
       {/* Quick actions */}
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">

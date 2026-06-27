@@ -4,6 +4,8 @@ import "react-circular-progressbar/dist/styles.css";
 import { motion } from "framer-motion";
 import { AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
 import type { Severity } from "@/lib/types";
+import { CountUp } from "./CountUp";
+
 
 export function scoreColor(score: number): string {
   if (score >= 80) return "#22c55e";
@@ -50,7 +52,7 @@ export function Card({
   const glowClass = hover && glow === "primary" ? "glow-primary" : hover && glow === "accent" ? "glow-accent" : "";
   return (
     <div
-      className={`rounded-lg border border-border bg-card transition-all duration-200 ${glowClass} ${className}`}
+      className={`card-surface rounded-xl border border-border transition-all duration-200 ${glowClass} ${className}`}
     >
       {children}
     </div>
@@ -80,14 +82,34 @@ export function StatCard({
           : tone === "accent"
             ? "text-accent"
             : "text-foreground";
+  const chipTone =
+    tone === "danger"
+      ? "bg-danger/15 text-danger ring-danger/30"
+      : tone === "warning"
+        ? "bg-warning/15 text-warning ring-warning/30"
+        : tone === "success"
+          ? "bg-success/15 text-success ring-success/30"
+          : tone === "accent"
+            ? "bg-accent/15 text-accent ring-accent/30"
+            : "bg-primary/15 text-primary ring-primary/30";
+  // Animate the count when the value is purely numeric (optionally with a % / unit suffix).
+  const numeric = typeof value === "string" ? value.match(/^(\d+(?:\.\d+)?)(\D*)$/) : null;
+  const displayValue =
+    typeof value === "number" ? (
+      <CountUp value={value} />
+    ) : numeric ? (
+      <CountUp value={parseFloat(numeric[1])} suffix={numeric[2]} />
+    ) : (
+      value
+    );
   return (
     <Card className="p-5" glow="primary">
       <div className="flex items-start justify-between">
         <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</span>
-        <span className="text-muted-foreground">{icon}</span>
+        <span className={`flex h-9 w-9 items-center justify-center rounded-lg ring-1 ${chipTone}`}>{icon}</span>
       </div>
-      <div className="mt-3 flex items-end gap-2">
-        <span className={`font-display text-3xl font-bold ${toneColor}`}>{value}</span>
+      <div className="mt-4 flex items-end gap-2">
+        <span className={`font-display text-3xl font-bold tabular-nums ${toneColor}`}>{displayValue}</span>
         {badge}
       </div>
     </Card>
@@ -106,13 +128,14 @@ export function ScoreGauge({ score, size = 120, label }: { score: number; size?:
           trailColor: "#2a2f3d",
           textColor: color,
           textSize: "26px",
-          pathTransitionDuration: 1,
+          pathTransitionDuration: 1.2,
         })}
       />
       {label && <div className="mt-2 text-center text-xs text-muted-foreground">{label}</div>}
     </div>
   );
 }
+
 
 const SEV_STYLES: Record<Severity, string> = {
   low: "bg-success/15 text-success ring-success/40",
