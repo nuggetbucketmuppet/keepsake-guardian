@@ -39,6 +39,8 @@ function Dashboard() {
   const workflows = useWorkflows();
   const guides = useGuides();
   const drills = useDrills();
+  const evaluations = useEvaluations();
+  const graph = useGraph();
 
   // Date-derived values depend on the current clock, which differs between the
   // server render and the client. Defer them until after mount so SSR and the
