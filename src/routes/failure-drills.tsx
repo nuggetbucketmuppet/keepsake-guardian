@@ -13,6 +13,7 @@ import {
   Clock,
   AlertTriangle,
   Trophy,
+  Upload,
   FileDown,
   RotateCcw,
 } from "lucide-react";
