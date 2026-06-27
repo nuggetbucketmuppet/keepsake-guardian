@@ -3,26 +3,29 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Box, Square, Plus, Pencil, BookOpen, CheckCircle2, ShieldAlert,
+  Crosshair, Zap, User, ListOrdered,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, Card, Button } from "@/components/ui-kit";
 import {
   useGraph, NODE_COLORS, NODE_LABELS, downstreamCount, connectedNodes,
-  addNodeManual, updateNode,
+  addNodeManual, updateNode, nodeSize, connectedComponent,
 } from "@/lib/graph";
-import type { GraphNode, NodeType, RiskLevel, DependencyGraph, Department } from "@/lib/types";
+import { useWorkflows } from "@/lib/store";
+import type { GraphNode, GraphEdge, NodeType, RiskLevel, DependencyGraph, Department } from "@/lib/types";
 
 export const Route = createFileRoute("/dependency-map")({
   head: () => ({ meta: [{ title: "Dependency Map — KeepSake" }] }),
   component: DependencyMapPage,
 });
 
-const TYPES: NodeType[] = ["ai", "saas", "internal", "human", "external", "unknown"];
+const TYPES: NodeType[] = ["ai", "platform", "human"];
 const DEPARTMENTS = ["All", "Finance", "Procurement", "HR", "IT", "Customer Success", "Operations", "Legal", "Marketing", "Others"];
 
 function DependencyMapPage() {
   const navigate = useNavigate();
   const graph = useGraph();
+  const workflows = useWorkflows();
   const [is3d, setIs3d] = useState(true);
   const [typeFilter, setTypeFilter] = useState<NodeType[]>([]);
   const [dept, setDept] = useState("All");
@@ -32,6 +35,16 @@ function DependencyMapPage() {
   const [editMode, setEditMode] = useState(false);
   const [selected, setSelected] = useState<GraphNode | null>(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [edgeView, setEdgeView] = useState<GraphEdge | null>(null);
+
+  // Isolation: by workflow, or by the selected node's connected component
+  const [workflowFilter, setWorkflowFilter] = useState("All");
+  const [isolateSelected, setIsolateSelected] = useState(false);
+
+  const isolatedIds = useMemo(() => {
+    if (isolateSelected && selected) return connectedComponent(graph, selected.id);
+    return null;
+  }, [isolateSelected, selected, graph]);
 
   const visibleNodes = useMemo(() => {
     return graph.nodes.filter((n) => {
@@ -40,9 +53,14 @@ function DependencyMapPage() {
       if (risk !== "All" && n.riskLevel !== risk) return false;
       if (noGuideOnly && n.hasGuide) return false;
       if (criticalOnly && n.riskLevel !== "high") return false;
+      if (workflowFilter !== "All") {
+        const ids = n.workflowIds ?? (n.workflowId ? [n.workflowId] : []);
+        if (!ids.includes(workflowFilter)) return false;
+      }
+      if (isolatedIds && !isolatedIds.has(n.id)) return false;
       return true;
     });
-  }, [graph, typeFilter, dept, risk, noGuideOnly, criticalOnly]);
+  }, [graph, typeFilter, dept, risk, noGuideOnly, criticalOnly, workflowFilter, isolatedIds]);
 
   const selConn = selected ? connectedNodes(graph, selected.id) : null;
 
@@ -50,7 +68,7 @@ function DependencyMapPage() {
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <PageHeader
         title="Dependency Map"
-        subtitle="Every tool your business depends on, AI or not. Larger nodes have more downstream dependencies — your single points of failure."
+        subtitle="Every tool, service and person your business depends on. Larger nodes have more downstream dependencies — your single points of failure."
         right={
           <div className="inline-flex shrink-0 gap-1 rounded-md border border-border bg-card p-1">
             <button onClick={() => setIs3d(true)} className={`inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-semibold ${is3d ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}><Box className="h-3.5 w-3.5" /> 3D</button>
@@ -79,8 +97,16 @@ function DependencyMapPage() {
           <select value={risk} onChange={(e) => setRisk(e.target.value as RiskLevel | "All")} className="shrink-0 rounded-md border border-input bg-secondary/60 px-2 py-1 text-xs">
             {["All", "high", "medium", "low"].map((r) => <option key={r} value={r}>{r === "All" ? "All risk" : `${r} risk`}</option>)}
           </select>
+          {/* Isolate a single workflow */}
+          <select value={workflowFilter} onChange={(e) => setWorkflowFilter(e.target.value)} className="shrink-0 rounded-md border border-input bg-secondary/60 px-2 py-1 text-xs">
+            <option value="All">All workflows</option>
+            {workflows.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
+          </select>
           <ChipToggle label="No fallback guide" active={noGuideOnly} onClick={() => setNoGuideOnly((v) => !v)} />
           <ChipToggle label="Critical paths only" active={criticalOnly} onClick={() => setCriticalOnly((v) => !v)} />
+          {selected && (
+            <ChipToggle label={isolateSelected ? "Isolating selection" : "Isolate selection"} active={isolateSelected} onClick={() => setIsolateSelected((v) => !v)} />
+          )}
           <span className="mx-1 h-5 w-px bg-border" />
           <Button variant="outline" className="shrink-0 px-2.5 py-1 text-xs" onClick={() => setShowAdd(true)}><Plus className="h-3.5 w-3.5" /> Add Node</Button>
           <Button variant={editMode ? "accent" : "outline"} className="shrink-0 px-2.5 py-1 text-xs" onClick={() => setEditMode((v) => !v)}><Pencil className="h-3.5 w-3.5" /> Edit Mode{editMode ? " (on)" : ""}</Button>
@@ -90,7 +116,7 @@ function DependencyMapPage() {
       <div className="relative">
         <Card hover={false} className="overflow-hidden p-0">
           <div className="relative h-[600px] w-full bg-[#0b0d13]">
-            <ClientGraph graph={graph} visibleNodes={visibleNodes} is3d={is3d} editMode={editMode} onSelect={setSelected} />
+            <ClientGraph graph={graph} visibleNodes={visibleNodes} is3d={is3d} editMode={editMode} onSelect={setSelected} onSelectEdge={setEdgeView} />
             {/* Legend */}
             <div className="pointer-events-none absolute left-4 top-4 rounded-lg border border-border bg-card/90 p-3 text-xs backdrop-blur">
               <div className="mb-1.5 font-semibold uppercase tracking-wide text-muted-foreground">Node types</div>
@@ -99,6 +125,7 @@ function DependencyMapPage() {
                   <span className="h-2.5 w-2.5 rounded-full" style={{ background: NODE_COLORS[t] }} /> {NODE_LABELS[t]}
                 </div>
               ))}
+              <div className="mt-1.5 text-[10px] text-muted-foreground">Branch = steps · click a branch to see them</div>
             </div>
           </div>
         </Card>
@@ -113,22 +140,30 @@ function DependencyMapPage() {
                   <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: NODE_COLORS[selected.type] }}>{NODE_LABELS[selected.type]}</span>
                   <h3 className="font-display text-lg font-bold">{selected.name}</h3>
                 </div>
-                <button onClick={() => setSelected(null)} className="rounded-md p-1.5 hover:bg-secondary"><X className="h-4 w-4" /></button>
+                <button onClick={() => { setSelected(null); setIsolateSelected(false); }} className="rounded-md p-1.5 hover:bg-secondary"><X className="h-4 w-4" /></button>
               </div>
               <Field label="Department" value={selected.department ?? "—"} />
               <Field label="Risk level" value={selected.riskLevel} />
               <Field label="Downstream dependencies" value={String(downstreamCount(graph, selected.id))} />
+              <Field label="Used in workflows" value={String((selected.workflowIds ?? (selected.workflowId ? [selected.workflowId] : [])).length || 0)} />
               <Field label="Fallback guide" value={selected.hasGuide ? "Exists" : "Not yet created"} />
-              {selected.reviewedAt && <Field label="Last reviewed" value={new Date(selected.reviewedAt).toLocaleDateString()} />}
+
+              {/* Contact details for human/position nodes */}
+              {selected.type === "human" && (
+                <ContactEditor node={selected} onSaved={(patch) => setSelected({ ...selected, ...patch })} />
+              )}
 
               <Connected title="Upstream" nodes={selConn.upstream} />
               <Connected title="Downstream" nodes={selConn.downstream} />
 
               <div className="mt-4 space-y-2">
-                <Button variant="accent" className="w-full" onClick={() => navigate({ to: "/fallback-guides", search: { node: selected.id } as never })}>
+                <Button variant="accent" className="w-full" onClick={() => navigate({ to: "/failure-drills", search: { nodes: selected.id } as never })}>
+                  <Zap className="h-4 w-4" /> Send to Failure Drill
+                </Button>
+                <Button variant="outline" className="w-full" onClick={() => navigate({ to: "/fallback-guides", search: { node: selected.id } as never })}>
                   <BookOpen className="h-4 w-4" /> Generate Fallback Guide
                 </Button>
-                <Button variant="outline" className="w-full" onClick={() => { updateNode(selected.id, { reviewedAt: new Date().toISOString() }); toast.success("Marked as reviewed."); setSelected({ ...selected, reviewedAt: new Date().toISOString() }); }}>
+                <Button variant="ghost" className="w-full" onClick={() => { updateNode(selected.id, { reviewedAt: new Date().toISOString() }); toast.success("Marked as reviewed."); setSelected({ ...selected, reviewedAt: new Date().toISOString() }); }}>
                   <CheckCircle2 className="h-4 w-4" /> Mark as Updated
                 </Button>
               </div>
@@ -145,13 +180,15 @@ function DependencyMapPage() {
       </div>
 
       {showAdd && <AddNodeModal onClose={() => setShowAdd(false)} />}
+      {edgeView && <EdgeStepsModal edge={edgeView} graph={graph} onClose={() => setEdgeView(null)} />}
     </div>
   );
 }
 
 // ---- Client-only force graph ----
-function ClientGraph({ graph, visibleNodes, is3d, editMode, onSelect }: {
-  graph: DependencyGraph; visibleNodes: GraphNode[]; is3d: boolean; editMode: boolean; onSelect: (n: GraphNode) => void;
+function ClientGraph({ graph, visibleNodes, is3d, editMode, onSelect, onSelectEdge }: {
+  graph: DependencyGraph; visibleNodes: GraphNode[]; is3d: boolean; editMode: boolean;
+  onSelect: (n: GraphNode) => void; onSelectEdge: (e: GraphEdge) => void;
 }) {
   const [mods, setMods] = useState<{ FG3D: any; FG2D: any } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
@@ -180,13 +217,14 @@ function ClientGraph({ graph, visibleNodes, is3d, editMode, onSelect }: {
       nodes: visibleNodes.map((n) => ({
         id: n.id, name: n.name, type: n.type,
         color: NODE_COLORS[n.type],
-        val: 2 + downstreamCount(graph, n.id) * 2,
+        val: nodeSize(graph, n),
         _node: n,
       })),
       links: graph.edges.filter((e) => ids.has(e.source) && ids.has(e.target)).map((e) => {
         const src = nodeById.get(e.source);
         const color = src?.hasGuide ? "#22c55e" : src?.riskLevel === "high" ? "#ef4444" : "#f59e0b";
-        return { source: e.source, target: e.target, color };
+        const steps = e.steps ?? (e.label ? [e.label] : []);
+        return { source: e.source, target: e.target, color, _edge: e, steps, stepCount: steps.length };
       }),
     };
   }, [graph, visibleNodes]);
@@ -204,10 +242,13 @@ function ClientGraph({ graph, visibleNodes, is3d, editMode, onSelect }: {
     nodeColor: (n: any) => n.color,
     nodeVal: (n: any) => n.val,
     linkColor: (l: any) => l.color,
-    linkWidth: 1.5,
-    linkDirectionalParticles: 2,
-    linkDirectionalParticleWidth: 2,
+    // thicker tube + one travelling particle per step so multi-steps read as distinct segments
+    linkWidth: (l: any) => 1.5 + l.stepCount,
+    linkDirectionalParticles: (l: any) => Math.max(1, l.stepCount),
+    linkDirectionalParticleWidth: 2.5,
+    linkLabel: (l: any) => (l.steps.length ? l.steps.map((s: string, i: number) => `${i + 1}. ${s}`).join(" → ") : ""),
     onNodeClick: (n: any) => onSelect(n._node),
+    onLinkClick: (l: any) => onSelectEdge(l._edge),
     enableNodeDrag: editMode,
   };
 
@@ -231,6 +272,28 @@ function ClientGraph({ graph, visibleNodes, is3d, editMode, onSelect }: {
           }}
         />
       )}
+    </div>
+  );
+}
+
+function ContactEditor({ node, onSaved }: { node: GraphNode; onSaved: (patch: Partial<GraphNode>) => void }) {
+  const [name, setName] = useState(node.contactName ?? "");
+  const [email, setEmail] = useState(node.contactEmail ?? "");
+  const [phone, setPhone] = useState(node.contactPhone ?? "");
+  return (
+    <div className="mb-4 rounded-lg border border-border bg-secondary/30 p-3">
+      <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <User className="h-3.5 w-3.5" /> Contact details (optional)
+      </div>
+      <div className="space-y-2">
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" className="w-full rounded-md border border-input bg-secondary/40 px-2.5 py-1.5 text-xs" />
+        <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="w-full rounded-md border border-input bg-secondary/40 px-2.5 py-1.5 text-xs" />
+        <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone" className="w-full rounded-md border border-input bg-secondary/40 px-2.5 py-1.5 text-xs" />
+        <Button variant="outline" className="w-full px-2 py-1 text-xs" onClick={() => {
+          const patch = { contactName: name, contactEmail: email, contactPhone: phone };
+          updateNode(node.id, patch); onSaved(patch); toast.success("Contact details saved.");
+        }}>Save contact</Button>
+      </div>
     </div>
   );
 }
@@ -267,9 +330,39 @@ function SummaryCard({ title, count, tone, icon }: { title: string; count: numbe
   );
 }
 
+function EdgeStepsModal({ edge, graph, onClose }: { edge: GraphEdge; graph: DependencyGraph; onClose: () => void }) {
+  const src = graph.nodes.find((n) => n.id === edge.source);
+  const tgt = graph.nodes.find((n) => n.id === edge.target);
+  const steps = edge.steps ?? (edge.label ? [edge.label] : []);
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <Card hover={false} className="w-full max-w-md overflow-hidden p-5">
+        <div onClick={(e) => e.stopPropagation()}>
+          <div className="mb-3 flex items-start justify-between">
+            <div className="flex items-center gap-1.5 font-display text-base font-bold"><ListOrdered className="h-4 w-4 text-accent" /> Steps on this branch</div>
+            <button onClick={onClose} className="rounded-md p-1.5 hover:bg-secondary"><X className="h-4 w-4" /></button>
+          </div>
+          <p className="mb-3 text-xs text-muted-foreground">{src?.name ?? "?"} → {tgt?.name ?? "?"}</p>
+          {steps.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No steps recorded for this branch.</p>
+          ) : (
+            <ol className="space-y-2">
+              {steps.map((s, i) => (
+                <li key={i} className="flex gap-2 rounded-md border border-border bg-secondary/40 px-3 py-2 text-sm">
+                  <span className="font-display font-bold text-accent">{i + 1}</span> {s}
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
 function AddNodeModal({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState("");
-  const [type, setType] = useState<NodeType>("saas");
+  const [type, setType] = useState<NodeType>("platform");
   const [department, setDepartment] = useState<Department>("Operations");
   const [riskLevel, setRiskLevel] = useState<RiskLevel>("medium");
   return (
@@ -278,7 +371,7 @@ function AddNodeModal({ onClose }: { onClose: () => void }) {
         <div onClick={(e) => e.stopPropagation()}>
           <h3 className="mb-4 font-display text-lg font-bold">Add a node manually</h3>
           <div className="space-y-3">
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Node name (e.g. Slack)" className="w-full rounded-md border border-input bg-secondary/40 px-3 py-2 text-sm" />
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Node name (e.g. Slack or Finance Manager)" className="w-full rounded-md border border-input bg-secondary/40 px-3 py-2 text-sm" />
             <select value={type} onChange={(e) => setType(e.target.value as NodeType)} className="w-full rounded-md border border-input bg-secondary/40 px-3 py-2 text-sm">
               {TYPES.map((t) => <option key={t} value={t}>{NODE_LABELS[t]}</option>)}
             </select>
