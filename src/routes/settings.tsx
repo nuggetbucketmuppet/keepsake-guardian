@@ -3,6 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Building2, Bell, ShieldCheck, Save } from "lucide-react";
 import { Button, Card, PageHeader } from "@/components/ui-kit";
+import { ACCOUNT, useOrg, setOrg } from "@/lib/store";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({ meta: [{ title: "Settings — KeepSake" }] }),
