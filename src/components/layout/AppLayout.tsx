@@ -33,7 +33,7 @@ function HowThisWorksButton() {
 
 const NAV = [
   { to: "/", label: "Dashboard", icon: Home },
-  { to: "/workflow-recorder", label: "Workflow Recorder", icon: Activity },
+  { to: "/workflow-recorder", label: "Upload a Workflow", icon: Activity },
   { to: "/fallback-guides", label: "Fallback Guides", icon: BookOpen },
   { to: "/dependency-map", label: "Dependency Map", icon: GitFork },
   { to: "/failure-drills", label: "Failure Drills", icon: Zap },
