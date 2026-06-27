@@ -69,14 +69,12 @@ function AppLayoutInner({ children }: { children: ReactNode }) {
       >
         <div className="flex items-center gap-2.5 px-5 py-5">
           <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/15 ring-1 ring-primary/40">
-            <img src={logo} alt="KeepSake logo" className="h-6 w-6 object-contain" />
+            <img src={logo} alt="Streamline logo" className="h-6 w-6 object-contain" />
           </div>
           <div>
-            <div className="font-display text-lg font-extrabold leading-none tracking-tight">KeepSake</div>
-            <div className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-              Resilience OS
-            </div>
+            <div className="font-display text-lg font-extrabold leading-none tracking-tight">Streamline</div>
           </div>
+
         </div>
 
         <nav className="flex-1 space-y-1 px-3 py-2">
