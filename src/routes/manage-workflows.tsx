@@ -115,6 +115,15 @@ function WorkflowsTab() {
               <Indicator icon={<Zap className="h-3.5 w-3.5" />} label="Last drill" value={drillFor(wf)} />
             </div>
             <div className="flex items-center gap-1">
+              {hasGuideFor(wf) ? (
+                <Button variant="outline" className="!py-1.5 text-xs" onClick={() => navigate({ to: "/fallback-guides", search: { workflow: wf.id } })}>
+                  <BookOpen className="h-3.5 w-3.5" /> View guide
+                </Button>
+              ) : (
+                <Button variant="outline" className="!py-1.5 text-xs" onClick={() => navigate({ to: "/fallback-guides", search: { workflow: wf.id, create: true } })}>
+                  <BookOpen className="h-3.5 w-3.5" /> Create guide
+                </Button>
+              )}
               <button aria-label="Edit workflow" onClick={() => setEditing(wf)} className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground">
                 <Pencil className="h-4 w-4" />
               </button>
