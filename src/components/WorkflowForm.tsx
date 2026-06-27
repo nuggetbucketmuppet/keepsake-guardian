@@ -1,12 +1,12 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
-  FileText, Code2, Workflow as WorkflowIcon, Upload, X, Plus, ChevronDown, Info, Sparkles, Paperclip, Loader2, Search, Wand2, Check,
+  FileText, Code2, Workflow as WorkflowIcon, Upload, X, Plus, ChevronDown, Info, Sparkles, Paperclip, Loader2, Send, MessageSquare, Bot,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, Button, AiLoading, ErrorCard } from "@/components/ui-kit";
-import { parseIntake, detectPlatforms, parseFile, examineWorkflow, autofillWorkflow } from "@/lib/claude";
-import type { NodeMatchSuggestion } from "@/lib/claude";
+import { parseIntake, detectPlatforms, parseFile, chatWorkflow, synthesiseWorkflow } from "@/lib/claude";
+import type { ChatMessage } from "@/lib/claude";
 import { mergeIntoGraph, NODE_LABELS, useGraph } from "@/lib/graph";
 import { saveWorkflow, updateWorkflow, uid } from "@/lib/store";
 import type { Department, Frequency, Classification, NodeType, Workflow } from "@/lib/types";
