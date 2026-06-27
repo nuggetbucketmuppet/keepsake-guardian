@@ -17,6 +17,7 @@ import { Route as FailureDrillsRouteImport } from './routes/failure-drills'
 import { Route as DependencyMapRouteImport } from './routes/dependency-map'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as FallbackIdRouteImport } from './routes/fallback.$id'
+import { Route as ApiParseFileRouteImport } from './routes/api/parse-file'
 import { Route as ApiOpenaiGenerateRouteImport } from './routes/api/openai-generate'
 import { Route as ApiExaScrapeRouteImport } from './routes/api/exa-scrape'
 import { Route as ApiClaudeRouteImport } from './routes/api/claude'
@@ -61,6 +62,11 @@ const FallbackIdRoute = FallbackIdRouteImport.update({
   path: '/fallback/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiParseFileRoute = ApiParseFileRouteImport.update({
+  id: '/api/parse-file',
+  path: '/api/parse-file',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiOpenaiGenerateRoute = ApiOpenaiGenerateRouteImport.update({
   id: '/api/openai-generate',
   path: '/api/openai-generate',
@@ -88,6 +94,7 @@ export interface FileRoutesByFullPath {
   '/api/claude': typeof ApiClaudeRoute
   '/api/exa-scrape': typeof ApiExaScrapeRoute
   '/api/openai-generate': typeof ApiOpenaiGenerateRoute
+  '/api/parse-file': typeof ApiParseFileRoute
   '/fallback/$id': typeof FallbackIdRoute
 }
 export interface FileRoutesByTo {
@@ -101,6 +108,7 @@ export interface FileRoutesByTo {
   '/api/claude': typeof ApiClaudeRoute
   '/api/exa-scrape': typeof ApiExaScrapeRoute
   '/api/openai-generate': typeof ApiOpenaiGenerateRoute
+  '/api/parse-file': typeof ApiParseFileRoute
   '/fallback/$id': typeof FallbackIdRoute
 }
 export interface FileRoutesById {
@@ -115,6 +123,7 @@ export interface FileRoutesById {
   '/api/claude': typeof ApiClaudeRoute
   '/api/exa-scrape': typeof ApiExaScrapeRoute
   '/api/openai-generate': typeof ApiOpenaiGenerateRoute
+  '/api/parse-file': typeof ApiParseFileRoute
   '/fallback/$id': typeof FallbackIdRoute
 }
 export interface FileRouteTypes {
@@ -130,6 +139,7 @@ export interface FileRouteTypes {
     | '/api/claude'
     | '/api/exa-scrape'
     | '/api/openai-generate'
+    | '/api/parse-file'
     | '/fallback/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -143,6 +153,7 @@ export interface FileRouteTypes {
     | '/api/claude'
     | '/api/exa-scrape'
     | '/api/openai-generate'
+    | '/api/parse-file'
     | '/fallback/$id'
   id:
     | '__root__'
@@ -156,6 +167,7 @@ export interface FileRouteTypes {
     | '/api/claude'
     | '/api/exa-scrape'
     | '/api/openai-generate'
+    | '/api/parse-file'
     | '/fallback/$id'
   fileRoutesById: FileRoutesById
 }
@@ -170,6 +182,7 @@ export interface RootRouteChildren {
   ApiClaudeRoute: typeof ApiClaudeRoute
   ApiExaScrapeRoute: typeof ApiExaScrapeRoute
   ApiOpenaiGenerateRoute: typeof ApiOpenaiGenerateRoute
+  ApiParseFileRoute: typeof ApiParseFileRoute
   FallbackIdRoute: typeof FallbackIdRoute
 }
 
@@ -231,6 +244,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FallbackIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/parse-file': {
+      id: '/api/parse-file'
+      path: '/api/parse-file'
+      fullPath: '/api/parse-file'
+      preLoaderRoute: typeof ApiParseFileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/openai-generate': {
       id: '/api/openai-generate'
       path: '/api/openai-generate'
@@ -266,6 +286,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiClaudeRoute: ApiClaudeRoute,
   ApiExaScrapeRoute: ApiExaScrapeRoute,
   ApiOpenaiGenerateRoute: ApiOpenaiGenerateRoute,
+  ApiParseFileRoute: ApiParseFileRoute,
   FallbackIdRoute: FallbackIdRoute,
 }
 export const routeTree = rootRouteImport
