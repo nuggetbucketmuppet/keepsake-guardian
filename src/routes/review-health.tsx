@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { differenceInDays, format, subDays } from "date-fns";
 import { toast } from "sonner";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -11,7 +11,7 @@ import {
   Zap,
   PauseCircle,
   TrendingUp,
-  Trophy,
+  AlertOctagon,
 } from "lucide-react";
 import {
   LineChart,
@@ -26,20 +26,20 @@ import { Button, Card, EmptyState, PageHeader } from "@/components/ui-kit";
 import { updateWorkflow, useWorkflows } from "@/lib/store";
 import type { Workflow } from "@/lib/types";
 
-export const Route = createFileRoute("/knowledge-decay")({
-  head: () => ({ meta: [{ title: "Knowledge Decay — KeepSake" }] }),
-  component: KnowledgeDecay,
+export const Route = createFileRoute("/review-health")({
+  head: () => ({ meta: [{ title: "Review Health — KeepSake" }] }),
+  component: ReviewHealth,
 });
 
-type DecayStatus = "Fresh" | "Aging" | "Warning" | "Critical";
-function decayOf(days: number): { status: DecayStatus; color: string } {
+type ReviewStatus = "Fresh" | "Aging" | "Warning" | "Critical";
+function reviewOf(days: number): { status: ReviewStatus; color: string } {
   if (days >= 60) return { status: "Critical", color: "#ef4444" };
   if (days >= 30) return { status: "Warning", color: "#ef4444" };
   if (days >= 15) return { status: "Aging", color: "#f59e0b" };
   return { status: "Fresh", color: "#22c55e" };
 }
 
-function KnowledgeDecay() {
+function ReviewHealth() {
   const workflows = useWorkflows();
   const [statusFilter, setStatusFilter] = useState("All");
   const [deptFilter, setDeptFilter] = useState("All");
@@ -50,7 +50,7 @@ function KnowledgeDecay() {
   const enriched = useMemo(() =>
     workflows.map((w) => {
       const days = differenceInDays(new Date(), new Date(w.lastHumanTouch));
-      return { ...w, days, ...decayOf(days) };
+      return { ...w, days, ...reviewOf(days) };
     }).sort((a, b) => b.days - a.days), [workflows]);
 
   const criticalCount = enriched.filter((w) => w.status === "Critical" && !w.automationPaused).length;
@@ -65,9 +65,9 @@ function KnowledgeDecay() {
     return true;
   });
 
-  const leaderboard = enriched.slice(0, 5);
+  const atRisk = enriched.slice(0, 5);
 
-  // Timeline: synthesise count of warning/critical over past 90 days
+  // Timeline: synthesise count of overdue reviews over past 90 days
   const timeline = useMemo(() => {
     const pts: { day: string; count: number }[] = [];
     for (let i = 90; i >= 0; i -= 6) {
@@ -92,13 +92,13 @@ function KnowledgeDecay() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <PageHeader title="Knowledge Decay Alerts" subtitle="Warnings for workflows that humans haven't manually touched in too long." />
+      <PageHeader title="Review Health" subtitle="Track when each workflow was last reviewed by a human and surface the ones that are overdue." />
 
       {criticalCount > 0 && (
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
           className="mb-6 flex items-center gap-3 rounded-lg border-2 border-danger bg-danger/10 p-4 text-danger animate-danger-pulse">
           <AlertTriangle className="h-5 w-5 shrink-0" />
-          <p className="text-sm font-bold">ACTION REQUIRED: {criticalCount} critical workflow{criticalCount > 1 ? "s" : ""} at risk of full knowledge decay. Automation paused pending review.</p>
+          <p className="text-sm font-bold">ACTION REQUIRED: {criticalCount} workflow{criticalCount > 1 ? "s" : ""} long overdue for human review. Automation paused pending review.</p>
         </motion.div>
       )}
 
@@ -118,7 +118,7 @@ function KnowledgeDecay() {
           </div>
 
           {filtered.length === 0 ? (
-            <EmptyState icon={<Clock className="h-7 w-7" />} title="No matching workflows" description="Adjust the filters to see knowledge decay status across your workflows." />
+            <EmptyState icon={<Clock className="h-7 w-7" />} title="No matching workflows" description="Adjust the filters to see review health across your workflows." />
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">
               {filtered.map((w) => {
@@ -136,14 +136,14 @@ function KnowledgeDecay() {
                     </div>
                     <div className="mt-4 flex items-end gap-2">
                       <span className="font-display text-4xl font-bold" style={{ color: w.color }}>{w.days}</span>
-                      <span className="pb-1 text-xs text-muted-foreground">days since human touch</span>
+                      <span className="pb-1 text-xs text-muted-foreground">days since last review</span>
                     </div>
-                    <p className="mt-1 font-mono text-[11px] text-muted-foreground">Last: {format(new Date(w.lastHumanTouch), "d MMM yyyy")}</p>
+                    <p className="mt-1 font-mono text-[11px] text-muted-foreground">Last review: {format(new Date(w.lastHumanTouch), "d MMM yyyy")}</p>
                     <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-secondary">
                       <div className="h-full rounded-full" style={{ width: `${pct}%`, background: `linear-gradient(90deg, #22c55e, ${w.color})` }} />
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2">
-                      <Button variant="outline" onClick={() => { updateWorkflow(w.id, { lastHumanTouch: new Date().toISOString() }); toast.success("Manual review scheduled & logged."); }}><CalendarCheck className="h-4 w-4" /> Review</Button>
+                      <Button variant="outline" onClick={() => { updateWorkflow(w.id, { lastHumanTouch: new Date().toISOString() }); toast.success("Review logged — clock reset."); }}><CalendarCheck className="h-4 w-4" /> Mark Reviewed</Button>
                       <Button variant="ghost" onClick={() => toast.message("Opening Failure Drills for this workflow…")}><Zap className="h-4 w-4" /> Drill</Button>
                       {!w.automationPaused && <Button variant="danger" onClick={() => setPauseTarget(w)}><PauseCircle className="h-4 w-4" /> Pause</Button>}
                     </div>
@@ -155,25 +155,25 @@ function KnowledgeDecay() {
 
           {/* Timeline */}
           <Card hover={false} className="mt-6 p-5">
-            <div className="mb-4 flex items-center gap-2"><TrendingUp className="h-4 w-4 text-accent" /><h3 className="font-display font-bold">Knowledge Decay Timeline (90 days)</h3></div>
+            <div className="mb-4 flex items-center gap-2"><TrendingUp className="h-4 w-4 text-accent" /><h3 className="font-display font-bold">Overdue Reviews Timeline (90 days)</h3></div>
             <ResponsiveContainer width="100%" height={240}>
               <LineChart data={timeline}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#2a2f3d" />
                 <XAxis dataKey="day" stroke="#8b93a7" fontSize={11} interval={2} />
                 <YAxis stroke="#8b93a7" fontSize={11} allowDecimals={false} />
                 <Tooltip contentStyle={{ background: "#1a1d27", border: "1px solid #2a2f3d", borderRadius: 8, color: "#f1f5f9" }} />
-                <Line type="monotone" dataKey="count" stroke="#f59e0b" strokeWidth={2} dot={false} name="Workflows in Warning/Critical" />
+                <Line type="monotone" dataKey="count" stroke="#f59e0b" strokeWidth={2} dot={false} name="Workflows overdue for review" />
               </LineChart>
             </ResponsiveContainer>
           </Card>
         </div>
 
-        {/* Leaderboard */}
+        {/* Top 5 At Risk strip */}
         <div>
           <Card hover={false} className="p-5">
-            <div className="mb-4 flex items-center gap-2"><Trophy className="h-4 w-4 text-warning" /><h3 className="font-display font-bold">Decay Leaderboard</h3></div>
+            <div className="mb-4 flex items-center gap-2"><AlertOctagon className="h-4 w-4 text-danger" /><h3 className="font-display font-bold">Top 5 At Risk</h3></div>
             <div className="space-y-3">
-              {leaderboard.map((w, i) => (
+              {atRisk.map((w, i) => (
                 <div key={w.id} className="flex items-center gap-3">
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-secondary font-mono text-sm font-bold" style={{ color: w.color }}>{i + 1}</span>
                   <div className="min-w-0 flex-1">

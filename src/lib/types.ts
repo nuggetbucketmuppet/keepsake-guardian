@@ -186,6 +186,8 @@ export interface CommonMistake {
 }
 export interface NodeFallbackGuide {
   id: string;
+  track?: "node" | "policy";
+  policyName?: string;
   nodeId?: string;
   nodeName: string;
   guide_title: string;
