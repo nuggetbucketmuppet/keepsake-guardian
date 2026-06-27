@@ -27,7 +27,7 @@ export const Route = createFileRoute("/fallback-guides")({
 const nodeWorkflowIds = (n: GraphNode): string[] => n.workflowIds ?? (n.workflowId ? [n.workflowId] : []);
 
 function FallbackGuides() {
-  const { node: nodeParam, workflow: workflowParam } = Route.useSearch();
+  const { node: nodeParam, workflow: workflowParam, create } = Route.useSearch();
   const graph = useGraph();
   const [guides, setGuides] = useState<NodeFallbackGuide[]>([]);
 
@@ -41,7 +41,7 @@ function FallbackGuides() {
         subtitle="Human-ready plans for when any node fails. Saved offline so they work when AI and cloud are down."
       />
 
-      <Tabs.Root defaultValue={workflowParam || nodeParam ? "saved" : "generate"}>
+      <Tabs.Root defaultValue={!create && (workflowParam || nodeParam) ? "saved" : "generate"}>
         <Tabs.List className="mb-6 inline-flex gap-1 rounded-md border border-border bg-card p-1">
           {[{ v: "generate", label: "Generate Guides" }, { v: "saved", label: `Saved (${guides.length})` }].map((t) => (
             <Tabs.Trigger key={t.v} value={t.v} className="rounded px-4 py-1.5 text-sm font-semibold text-muted-foreground transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">{t.label}</Tabs.Trigger>
