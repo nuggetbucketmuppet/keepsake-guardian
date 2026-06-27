@@ -268,6 +268,17 @@ function PolicyCentre() {
                 <Plus className="h-5 w-5 text-primary" /> Add a Policy
               </h2>
               <div className="space-y-3">
+                {/* Direct file upload */}
+                <label
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) onPolicyFile(f); }}
+                  className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-secondary/30 py-6 text-center transition-colors hover:border-primary"
+                >
+                  <FileText className="mb-1.5 h-5 w-5 text-muted-foreground" />
+                  <span className="text-sm">{fileName || "Drag & drop or click to upload a policy file"}</span>
+                  <span className="text-xs text-muted-foreground">.txt .md .json .csv</span>
+                  <input type="file" accept=".txt,.md,.json,.csv,text/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onPolicyFile(f); }} />
+                </label>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -280,11 +291,25 @@ function PolicyCentre() {
                   placeholder="Category (e.g. Data Privacy)"
                   className="w-full rounded-md border border-border bg-secondary/60 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary"
                 />
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div>
+                    <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Version</label>
+                    <input value={policyVersion} onChange={(e) => setPolicyVersion(e.target.value)} placeholder="e.g. v2.1" className="w-full rounded-md border border-border bg-secondary/60 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Effective date</label>
+                    <input type="date" value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)} className="w-full rounded-md border border-border bg-secondary/60 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Valid until</label>
+                    <input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} className="w-full rounded-md border border-border bg-secondary/60 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary" />
+                  </div>
+                </div>
                 <textarea
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   rows={6}
-                  placeholder="Paste the policy text here..."
+                  placeholder="…or paste the policy text here"
                   className="w-full rounded-md border border-border bg-secondary/60 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary"
                 />
                 <div className="flex justify-end">
@@ -294,6 +319,7 @@ function PolicyCentre() {
                 </div>
               </div>
             </Card>
+
 
             <Card hover={false} className="p-5">
               <h2 className="mb-1 flex items-center gap-2 font-display text-lg font-bold">
