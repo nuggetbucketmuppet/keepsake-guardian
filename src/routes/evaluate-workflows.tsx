@@ -128,42 +128,41 @@ function EvaluationTab() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<MapEvaluationResult | null>(null);
-  const [applied, setApplied] = useState(false);
 
   const hasNodes = useMemo(() => graph.nodes.some((n) => !n.archived), [graph]);
 
+  // Persist the generated resilience scores across the platform automatically.
+  const applyScores = (res: MapEvaluationResult) => {
+    let nodeHits = 0;
+    for (const rn of res.at_risk_nodes) {
+      const match = graph.nodes.find((g) => g.name.toLowerCase() === rn.node_name.toLowerCase());
+      if (match) { updateNode(match.id, { resilienceScore: rn.resilience_score }); nodeHits++; }
+    }
+    for (const wf of workflows) {
+      const wfNodes = graph.nodes.filter((g) => (g.workflowIds ?? (g.workflowId ? [g.workflowId] : [])).includes(wf.id));
+      const scored = wfNodes
+        .map((g) => res.at_risk_nodes.find((rn) => rn.node_name.toLowerCase() === g.name.toLowerCase())?.resilience_score)
+        .filter((s): s is number => typeof s === "number");
+      const score = scored.length ? Math.round(scored.reduce((a, b) => a + b, 0) / scored.length) : res.overall_resilience_score;
+      updateWorkflow(wf.id, { resilienceScore: score });
+    }
+    return nodeHits;
+  };
+
   const run = async () => {
-    setLoading(true); setError(null); setResult(null); setApplied(false);
+    setLoading(true); setError(null); setResult(null);
     try {
       const res = await evaluateDependencyMap(graphSummary(graph));
       setResult(res);
+      const nodeHits = applyScores(res);
+      toast.success(`Resilience scores updated across the platform (${nodeHits} node${nodeHits === 1 ? "" : "s"} + ${workflows.length} workflow${workflows.length === 1 ? "" : "s"}).`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Evaluation failed.");
     } finally { setLoading(false); }
   };
 
-  // Persist the generated resilience scores across the platform.
-  const applyScores = () => {
-    if (!result) return;
-    let nodeHits = 0;
-    for (const rn of result.at_risk_nodes) {
-      const match = graph.nodes.find((g) => g.name.toLowerCase() === rn.node_name.toLowerCase());
-      if (match) { updateNode(match.id, { resilienceScore: rn.resilience_score }); nodeHits++; }
-    }
-    // Update each workflow's resilience score from the average of its (scored) nodes, else the overall.
-    for (const wf of workflows) {
-      const wfNodes = graph.nodes.filter((g) => (g.workflowIds ?? (g.workflowId ? [g.workflowId] : [])).includes(wf.id));
-      const scored = wfNodes
-        .map((g) => result.at_risk_nodes.find((rn) => rn.node_name.toLowerCase() === g.name.toLowerCase())?.resilience_score)
-        .filter((s): s is number => typeof s === "number");
-      const score = scored.length ? Math.round(scored.reduce((a, b) => a + b, 0) / scored.length) : result.overall_resilience_score;
-      updateWorkflow(wf.id, { resilienceScore: score });
-    }
-    setApplied(true);
-    toast.success(`Resilience scores applied across the platform (${nodeHits} node${nodeHits === 1 ? "" : "s"} + ${workflows.length} workflow${workflows.length === 1 ? "" : "s"}).`);
-  };
-
   const nodes = result ? (riskOnly ? result.at_risk_nodes.filter((n) => n.risk_level !== "low") : result.at_risk_nodes) : [];
+
 
   return (
     <div className="space-y-5">
