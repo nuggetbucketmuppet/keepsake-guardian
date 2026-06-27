@@ -328,3 +328,30 @@ export const seedDrills: DrillRecord[] = [
     debrief: "Strong manual recovery. AP closed within SLA. Document the export shortcut for future runs.",
   },
 ];
+
+export const seedPolicies: Policy[] = [
+  {
+    id: "pol-1",
+    name: "Data Protection & PII Handling Policy",
+    category: "Data Privacy",
+    source: "upload",
+    content:
+      "All workflows that process personally identifiable information (PII) must: 1) Restrict access to PII on a need-to-know basis. 2) Never transmit PII over unencrypted channels or personal email accounts. 3) Maintain an audit trail of every read/write to PII records. 4) Require human approval before any automated deletion of customer records. 5) Ensure any AI/third-party tool processing PII has a signed data processing agreement. 6) Retain PII no longer than required by law and document the retention period.",
+    summary:
+      "Requires need-to-know access, encryption, audit trails, human approval for deletions, signed DPAs for AI tools, and documented retention for any workflow handling PII.",
+    addedDate: daysAgo(40),
+  },
+  {
+    id: "pol-2",
+    name: "Financial Controls & Segregation of Duties",
+    category: "Finance",
+    source: "upload",
+    content:
+      "Financial workflows must enforce segregation of duties: the entity that initiates a payment cannot also approve it. All payments above the materiality threshold require a documented human approval. Automated invoice matching must flag, not auto-approve, any discrepancy above tolerance. A complete reconciliation must be retained for every close. No approval step may be skipped without a documented, time-limited exception signed by the Finance lead.",
+    summary:
+      "Mandates segregation of duties, human approval above thresholds, flagging of discrepancies, retained reconciliations, and documented exceptions for skipped approvals.",
+    addedDate: daysAgo(25),
+  },
+];
+
+export const seedEvaluations: ComplianceEvaluation[] = [];
