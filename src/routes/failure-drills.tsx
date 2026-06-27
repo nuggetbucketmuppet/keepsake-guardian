@@ -42,6 +42,8 @@ export const Route = createFileRoute("/failure-drills")({
 const inputCls =
   "w-full rounded-md border border-input bg-secondary/60 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none";
 
+const DEPARTMENTS: string[] = ["Finance", "Procurement", "HR", "IT", "Customer Success", "Operations", "Legal", "Marketing", "Others"];
+
 function gradeFor(pct: number): string {
   if (pct >= 90) return "A";
   if (pct >= 75) return "B";
