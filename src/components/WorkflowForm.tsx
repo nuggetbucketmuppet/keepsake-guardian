@@ -370,52 +370,8 @@ export function WorkflowForm({
         </Card>
       )}
 
-      {/* Examine + Autofill */}
-      <Card hover={false} className="overflow-hidden p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h3 className="text-sm font-semibold">Examine your input</h3>
-            <p className="text-xs text-muted-foreground">Generate clarifying questions, find nodes shared with other workflows, or auto-fill the form.</p>
-          </div>
-          <div className="flex shrink-0 flex-wrap gap-2">
-            <Button variant="outline" onClick={runExamine} disabled={examining}>
-              {examining ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-              {examining ? "Examining…" : "Examine"}
-            </Button>
-            <Button variant="outline" onClick={runAutofill} disabled={autofilling}>
-              {autofilling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-              {autofilling ? "Autofilling…" : "Autofill details"}
-            </Button>
-          </div>
-        </div>
 
-        {nodeMatches.length > 0 && (
-          <div className="mt-4 space-y-2">
-            <div className="flex items-center gap-2 text-sm font-semibold"><Info className="h-4 w-4 text-accent" /> Possible shared nodes</div>
-            {nodeMatches.map((m, i) => (
-              <div key={i} className="rounded-lg border border-border bg-secondary/30 p-3">
-                <p className="text-xs text-foreground">{m.question}</p>
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <Button variant={matchDecision[i] === "yes" ? "primary" : "outline"} className="!py-1 !px-2.5 text-xs" onClick={() => decideMatch(i, "yes", m)}>
-                    <Check className="h-3.5 w-3.5" /> Yes — same as "{m.existingNodeName}"
-                  </Button>
-                  <Button variant={matchDecision[i] === "no" ? "primary" : "outline"} className="!py-1 !px-2.5 text-xs" onClick={() => decideMatch(i, "no", m)}>
-                    <X className="h-3.5 w-3.5" /> No — it's new
-                  </Button>
-                  {matchDecision[i] === "no" && (
-                    <input
-                      value={matchNewName[i] ?? m.detectedName}
-                      onChange={(e) => setMatchNewName((s) => ({ ...s, [i]: e.target.value }))}
-                      placeholder="Name the new node"
-                      className="inp min-w-[160px] flex-1 !py-1"
-                    />
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
+
 
 
       <Card hover={false} className="overflow-hidden p-5">
