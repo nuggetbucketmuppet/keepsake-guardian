@@ -12,7 +12,7 @@ import { getAllGuides } from "@/lib/idb";
 import type { Workflow, GraphNode, NodeType, NodeFallbackGuide } from "@/lib/types";
 
 export const Route = createFileRoute("/manage-workflows")({
-  head: () => ({ meta: [{ title: "Manage Workflows — KeepSake" }] }),
+  head: () => ({ meta: [{ title: "Manage Workflows — Streamline" }] }),
   component: ManageWorkflows,
 });
 

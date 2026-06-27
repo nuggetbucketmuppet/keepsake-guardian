@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/ui-kit";
 import { WorkflowForm } from "@/components/WorkflowForm";
 
 export const Route = createFileRoute("/workflow-recorder")({
-  head: () => ({ meta: [{ title: "Upload a Workflow — KeepSake" }] }),
+  head: () => ({ meta: [{ title: "Upload a Workflow — Streamline" }] }),
   component: WorkflowUpload,
 });
 

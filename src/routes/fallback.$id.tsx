@@ -6,7 +6,7 @@ import { getGuide } from "@/lib/idb";
 import type { NodeFallbackGuide } from "@/lib/types";
 
 export const Route = createFileRoute("/fallback/$id")({
-  head: () => ({ meta: [{ title: "Offline Fallback Guide — KeepSake" }] }),
+  head: () => ({ meta: [{ title: "Offline Fallback Guide — Streamline" }] }),
   component: OfflineGuide,
 });
 

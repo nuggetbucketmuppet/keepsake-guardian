@@ -7,7 +7,7 @@ import { ACCOUNT, useOrg, setOrg, useSettings, saveSettings } from "@/lib/store"
 import profilePhoto from "@/assets/profile-photo.png.asset.json";
 
 export const Route = createFileRoute("/settings")({
-  head: () => ({ meta: [{ title: "Settings — KeepSake" }] }),
+  head: () => ({ meta: [{ title: "Settings — Streamline" }] }),
   component: SettingsPage,
 });
 
