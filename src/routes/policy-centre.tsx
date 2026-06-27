@@ -546,6 +546,13 @@ function PolicyRow({ policy, index }: { policy: Policy; index: number }) {
               </span>
             </div>
             {policy.summary && <p className="mt-1.5 text-sm text-muted-foreground">{policy.summary}</p>}
+            <div className="mt-2 flex flex-wrap gap-2 text-[10px] text-muted-foreground">
+              <span className="rounded bg-secondary/60 px-1.5 py-0.5">Uploaded {format(new Date(policy.addedDate), "d MMM yyyy")}</span>
+              {policy.policyVersion && <span className="rounded bg-secondary/60 px-1.5 py-0.5">Version {policy.policyVersion}</span>}
+              {policy.effectiveDate && <span className="rounded bg-secondary/60 px-1.5 py-0.5">Effective {format(new Date(policy.effectiveDate), "d MMM yyyy")}</span>}
+              {policy.validUntil && <span className="rounded bg-secondary/60 px-1.5 py-0.5">Valid until {format(new Date(policy.validUntil), "d MMM yyyy")}</span>}
+              {policy.fileName && <span className="rounded bg-secondary/60 px-1.5 py-0.5">{policy.fileName}</span>}
+            </div>
             {policy.url && (
               <a href={policy.url} target="_blank" rel="noreferrer" className="mt-1 block truncate text-xs text-accent hover:underline">
                 {policy.url}
