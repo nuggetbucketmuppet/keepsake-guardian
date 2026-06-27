@@ -1,13 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
-  Pencil, Trash2, X, Search, Cpu, Server, User, Save, ChevronDown, Workflow as WorkflowIcon, Boxes,
+  Pencil, Trash2, X, Search, Cpu, Server, User, Save, ChevronDown, Workflow as WorkflowIcon, Boxes, Sparkles, ShieldCheck, Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, Card, Button, ScoreBadge, EmptyState } from "@/components/ui-kit";
 import { WorkflowForm } from "@/components/WorkflowForm";
-import { useWorkflows, deleteWorkflow } from "@/lib/store";
-import { useGraph, updateNode, removeNode, NODE_LABELS } from "@/lib/graph";
+import { useWorkflows, deleteWorkflow, useEvaluations, useDrills } from "@/lib/store";
+import { useGraph, updateNode, removeNode, orphanNodes, NODE_LABELS } from "@/lib/graph";
 import type { Workflow, GraphNode, NodeType } from "@/lib/types";
 
 export const Route = createFileRoute("/manage-workflows")({
