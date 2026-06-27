@@ -15,6 +15,9 @@ import { useWorkflows } from "@/lib/store";
 import type { GraphNode, GraphEdge, NodeType, RiskLevel, DependencyGraph, Department } from "@/lib/types";
 
 export const Route = createFileRoute("/dependency-map")({
+  validateSearch: (s: Record<string, unknown>): { focus?: string } => ({
+    focus: typeof s.focus === "string" ? s.focus : undefined,
+  }),
   head: () => ({ meta: [{ title: "Dependency Map — KeepSake" }] }),
   component: DependencyMapPage,
 });
