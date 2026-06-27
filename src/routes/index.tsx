@@ -8,12 +8,11 @@ import {
   BookOpen,
   CheckCircle2,
   ClipboardList,
-  Clock,
+  GitFork,
   ShieldAlert,
   Zap,
   ArrowRight,
   Radio,
-  Code2,
 } from "lucide-react";
 import { PulseRing } from "@/components/PulseRing";
 import { Card, PageHeader, StatCard } from "@/components/ui-kit";
@@ -92,10 +91,10 @@ function Dashboard() {
   ].sort((a, b) => +new Date(b.time) - +new Date(a.time));
 
   const quickActions = [
-    { to: "/workflow-recorder", icon: Activity, title: "Record a Workflow", desc: "Document what your AI agents do.", glow: "primary" as const },
-    { to: "/failure-drills", icon: Zap, title: "Run a Failure Drill", desc: "Test your team's offline readiness.", glow: "accent" as const },
-    { to: "/review-health", icon: Clock, title: "Review Health", desc: "Spot workflows overdue for human review.", glow: "primary" as const },
-    { to: "/system-processes", icon: Code2, title: "Add System Process Code", desc: "Document the code & pseudocode behind processes.", glow: "accent" as const },
+    { to: "/workflow-recorder", icon: Activity, title: "Upload a Workflow", desc: "Map tools, AI, and process code in one place.", glow: "primary" as const },
+    { to: "/dependency-map", icon: GitFork, title: "Dependency Map", desc: "See single points of failure across your stack.", glow: "accent" as const },
+    { to: "/failure-drills", icon: Zap, title: "Run a Failure Drill", desc: "Test your team's offline readiness.", glow: "primary" as const },
+    { to: "/fallback-guides", icon: BookOpen, title: "Fallback Guides", desc: "Human-ready plans for when nodes fail.", glow: "accent" as const },
   ];
 
   return (
@@ -129,7 +128,7 @@ function Dashboard() {
             label="Decay Alerts Active"
             value={decayAlerts}
             tone="warning"
-            icon={<Clock className="h-5 w-5" />}
+            icon={<AlertTriangle className="h-5 w-5" />}
             badge={
               decayAlerts > 0 ? (
                 <span className="mb-1 rounded bg-warning/20 px-1.5 py-0.5 text-[10px] font-bold uppercase text-warning ring-1 ring-warning/40">

@@ -10,9 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorkflowRecorderRouteImport } from './routes/workflow-recorder'
-import { Route as SystemProcessesRouteImport } from './routes/system-processes'
 import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as ReviewHealthRouteImport } from './routes/review-health'
 import { Route as PolicyCentreRouteImport } from './routes/policy-centre'
 import { Route as FallbackGuidesRouteImport } from './routes/fallback-guides'
 import { Route as FailureDrillsRouteImport } from './routes/failure-drills'
@@ -28,19 +26,9 @@ const WorkflowRecorderRoute = WorkflowRecorderRouteImport.update({
   path: '/workflow-recorder',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SystemProcessesRoute = SystemProcessesRouteImport.update({
-  id: '/system-processes',
-  path: '/system-processes',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ReviewHealthRoute = ReviewHealthRouteImport.update({
-  id: '/review-health',
-  path: '/review-health',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PolicyCentreRoute = PolicyCentreRouteImport.update({
@@ -95,9 +83,7 @@ export interface FileRoutesByFullPath {
   '/failure-drills': typeof FailureDrillsRoute
   '/fallback-guides': typeof FallbackGuidesRoute
   '/policy-centre': typeof PolicyCentreRoute
-  '/review-health': typeof ReviewHealthRoute
   '/settings': typeof SettingsRoute
-  '/system-processes': typeof SystemProcessesRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
   '/api/claude': typeof ApiClaudeRoute
   '/api/exa-scrape': typeof ApiExaScrapeRoute
@@ -110,9 +96,7 @@ export interface FileRoutesByTo {
   '/failure-drills': typeof FailureDrillsRoute
   '/fallback-guides': typeof FallbackGuidesRoute
   '/policy-centre': typeof PolicyCentreRoute
-  '/review-health': typeof ReviewHealthRoute
   '/settings': typeof SettingsRoute
-  '/system-processes': typeof SystemProcessesRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
   '/api/claude': typeof ApiClaudeRoute
   '/api/exa-scrape': typeof ApiExaScrapeRoute
@@ -126,9 +110,7 @@ export interface FileRoutesById {
   '/failure-drills': typeof FailureDrillsRoute
   '/fallback-guides': typeof FallbackGuidesRoute
   '/policy-centre': typeof PolicyCentreRoute
-  '/review-health': typeof ReviewHealthRoute
   '/settings': typeof SettingsRoute
-  '/system-processes': typeof SystemProcessesRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
   '/api/claude': typeof ApiClaudeRoute
   '/api/exa-scrape': typeof ApiExaScrapeRoute
@@ -143,9 +125,7 @@ export interface FileRouteTypes {
     | '/failure-drills'
     | '/fallback-guides'
     | '/policy-centre'
-    | '/review-health'
     | '/settings'
-    | '/system-processes'
     | '/workflow-recorder'
     | '/api/claude'
     | '/api/exa-scrape'
@@ -158,9 +138,7 @@ export interface FileRouteTypes {
     | '/failure-drills'
     | '/fallback-guides'
     | '/policy-centre'
-    | '/review-health'
     | '/settings'
-    | '/system-processes'
     | '/workflow-recorder'
     | '/api/claude'
     | '/api/exa-scrape'
@@ -173,9 +151,7 @@ export interface FileRouteTypes {
     | '/failure-drills'
     | '/fallback-guides'
     | '/policy-centre'
-    | '/review-health'
     | '/settings'
-    | '/system-processes'
     | '/workflow-recorder'
     | '/api/claude'
     | '/api/exa-scrape'
@@ -189,9 +165,7 @@ export interface RootRouteChildren {
   FailureDrillsRoute: typeof FailureDrillsRoute
   FallbackGuidesRoute: typeof FallbackGuidesRoute
   PolicyCentreRoute: typeof PolicyCentreRoute
-  ReviewHealthRoute: typeof ReviewHealthRoute
   SettingsRoute: typeof SettingsRoute
-  SystemProcessesRoute: typeof SystemProcessesRoute
   WorkflowRecorderRoute: typeof WorkflowRecorderRoute
   ApiClaudeRoute: typeof ApiClaudeRoute
   ApiExaScrapeRoute: typeof ApiExaScrapeRoute
@@ -208,25 +182,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkflowRecorderRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/system-processes': {
-      id: '/system-processes'
-      path: '/system-processes'
-      fullPath: '/system-processes'
-      preLoaderRoute: typeof SystemProcessesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/settings': {
       id: '/settings'
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/review-health': {
-      id: '/review-health'
-      path: '/review-health'
-      fullPath: '/review-health'
-      preLoaderRoute: typeof ReviewHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/policy-centre': {
@@ -301,9 +261,7 @@ const rootRouteChildren: RootRouteChildren = {
   FailureDrillsRoute: FailureDrillsRoute,
   FallbackGuidesRoute: FallbackGuidesRoute,
   PolicyCentreRoute: PolicyCentreRoute,
-  ReviewHealthRoute: ReviewHealthRoute,
   SettingsRoute: SettingsRoute,
-  SystemProcessesRoute: SystemProcessesRoute,
   WorkflowRecorderRoute: WorkflowRecorderRoute,
   ApiClaudeRoute: ApiClaudeRoute,
   ApiExaScrapeRoute: ApiExaScrapeRoute,

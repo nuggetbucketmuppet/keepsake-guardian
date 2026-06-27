@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Building2, SlidersHorizontal, Bell, ShieldCheck, Save } from "lucide-react";
+import { Building2, Bell, ShieldCheck, Save } from "lucide-react";
 import { Button, Card, PageHeader } from "@/components/ui-kit";
 
 export const Route = createFileRoute("/settings")({
@@ -14,9 +14,6 @@ const inputCls =
 
 function SettingsPage() {
   const [org, setOrg] = useState("Northwind Enterprises");
-  const [aging, setAging] = useState(15);
-  const [warning, setWarning] = useState(30);
-  const [critical, setCritical] = useState(60);
   const [notifyDecay, setNotifyDecay] = useState(true);
   const [notifyDrills, setNotifyDrills] = useState(true);
   const [autoPause, setAutoPause] = useState(true);
@@ -30,16 +27,6 @@ function SettingsPage() {
           <SectionHead icon={<Building2 className="h-4 w-4" />} title="Organisation" />
           <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Organisation name</label>
           <input className={inputCls} value={org} onChange={(e) => setOrg(e.target.value)} />
-        </Card>
-
-        <Card hover={false} className="p-6">
-          <SectionHead icon={<SlidersHorizontal className="h-4 w-4" />} title="Review Health Thresholds" />
-          <p className="mb-4 text-sm text-muted-foreground">Days since last human execution before each alert level triggers.</p>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Threshold label="Aging (amber)" value={aging} onChange={setAging} color="#f59e0b" />
-            <Threshold label="Warning (red)" value={warning} onChange={setWarning} color="#ef4444" />
-            <Threshold label="Critical (drill)" value={critical} onChange={setCritical} color="#ef4444" />
-          </div>
         </Card>
 
         <Card hover={false} className="p-6">
@@ -72,17 +59,6 @@ function SectionHead({ icon, title }: { icon: React.ReactNode; title: string }) 
   return <div className="mb-4 flex items-center gap-2 text-foreground"><span className="text-accent">{icon}</span><h3 className="font-display font-bold">{title}</h3></div>;
 }
 
-function Threshold({ label, value, onChange, color }: { label: string; value: number; onChange: (v: number) => void; color: string }) {
-  return (
-    <div>
-      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide" style={{ color }}>{label}</label>
-      <div className="flex items-center gap-2">
-        <input type="number" min={1} value={value} onChange={(e) => onChange(Number(e.target.value))} className={inputCls} />
-        <span className="text-xs text-muted-foreground">days</span>
-      </div>
-    </div>
-  );
-}
 
 function ToggleRow({ label, desc, checked, onChange }: { label: string; desc: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (

@@ -7,13 +7,11 @@ import {
   BookOpen,
   GitFork,
   Zap,
-  Clock,
   Settings,
   Menu,
   X,
   LogOut,
   ShieldCheck,
-  Code2,
   HelpCircle,
 } from "lucide-react";
 import { OnboardingProvider, useOnboarding } from "@/components/Onboarding";
@@ -37,8 +35,6 @@ const NAV = [
   { to: "/fallback-guides", label: "Fallback Guides", icon: BookOpen },
   { to: "/dependency-map", label: "Dependency Map", icon: GitFork },
   { to: "/failure-drills", label: "Failure Drills", icon: Zap },
-  { to: "/review-health", label: "Review Health", icon: Clock },
-  { to: "/system-processes", label: "System Processes", icon: Code2 },
   { to: "/policy-centre", label: "Policy Centre", icon: ShieldCheck },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
