@@ -17,6 +17,7 @@ import { Route as FallbackGuidesRouteImport } from './routes/fallback-guides'
 import { Route as FailureDrillsRouteImport } from './routes/failure-drills'
 import { Route as DependencyMapRouteImport } from './routes/dependency-map'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiOpenaiGenerateRouteImport } from './routes/api/openai-generate'
 import { Route as ApiClaudeRouteImport } from './routes/api/claude'
 
 const WorkflowRecorderRoute = WorkflowRecorderRouteImport.update({
@@ -59,6 +60,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiOpenaiGenerateRoute = ApiOpenaiGenerateRouteImport.update({
+  id: '/api/openai-generate',
+  path: '/api/openai-generate',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiClaudeRoute = ApiClaudeRouteImport.update({
   id: '/api/claude',
   path: '/api/claude',
@@ -75,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/system-processes': typeof SystemProcessesRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
   '/api/claude': typeof ApiClaudeRoute
+  '/api/openai-generate': typeof ApiOpenaiGenerateRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -86,6 +93,7 @@ export interface FileRoutesByTo {
   '/system-processes': typeof SystemProcessesRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
   '/api/claude': typeof ApiClaudeRoute
+  '/api/openai-generate': typeof ApiOpenaiGenerateRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -98,6 +106,7 @@ export interface FileRoutesById {
   '/system-processes': typeof SystemProcessesRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
   '/api/claude': typeof ApiClaudeRoute
+  '/api/openai-generate': typeof ApiOpenaiGenerateRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -111,6 +120,7 @@ export interface FileRouteTypes {
     | '/system-processes'
     | '/workflow-recorder'
     | '/api/claude'
+    | '/api/openai-generate'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -122,6 +132,7 @@ export interface FileRouteTypes {
     | '/system-processes'
     | '/workflow-recorder'
     | '/api/claude'
+    | '/api/openai-generate'
   id:
     | '__root__'
     | '/'
@@ -133,6 +144,7 @@ export interface FileRouteTypes {
     | '/system-processes'
     | '/workflow-recorder'
     | '/api/claude'
+    | '/api/openai-generate'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -145,6 +157,7 @@ export interface RootRouteChildren {
   SystemProcessesRoute: typeof SystemProcessesRoute
   WorkflowRecorderRoute: typeof WorkflowRecorderRoute
   ApiClaudeRoute: typeof ApiClaudeRoute
+  ApiOpenaiGenerateRoute: typeof ApiOpenaiGenerateRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -205,6 +218,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/openai-generate': {
+      id: '/api/openai-generate'
+      path: '/api/openai-generate'
+      fullPath: '/api/openai-generate'
+      preLoaderRoute: typeof ApiOpenaiGenerateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/claude': {
       id: '/api/claude'
       path: '/api/claude'
@@ -225,6 +245,7 @@ const rootRouteChildren: RootRouteChildren = {
   SystemProcessesRoute: SystemProcessesRoute,
   WorkflowRecorderRoute: WorkflowRecorderRoute,
   ApiClaudeRoute: ApiClaudeRoute,
+  ApiOpenaiGenerateRoute: ApiOpenaiGenerateRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
