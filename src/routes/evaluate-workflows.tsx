@@ -1,12 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
-import { Gauge, Sparkles, ShieldAlert, TrendingUp, AlertTriangle } from "lucide-react";
+import { Gauge, Sparkles, ShieldAlert, TrendingUp, AlertTriangle, Lightbulb, Search, ExternalLink, Loader2, CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
 import { PageHeader, Card, Button, AiLoading, ErrorCard, EmptyState } from "@/components/ui-kit";
-import { useGraph, graphSummary } from "@/lib/graph";
-import { useWorkflows } from "@/lib/store";
-import { optimiseMap, evaluateDependencyMap } from "@/lib/claude";
-import type { OptimisationResult, MapEvaluationResult } from "@/lib/claude";
+import { useGraph, graphSummary, updateNode } from "@/lib/graph";
+import { useWorkflows, updateWorkflow } from "@/lib/store";
+import { optimiseMap, evaluateDependencyMap, suggestAlternatives } from "@/lib/claude";
+import type { OptimisationResult, MapEvaluationResult, RiskNode, AlternativeSuggestion } from "@/lib/claude";
 
 export const Route = createFileRoute("/evaluate-workflows")({
   head: () => ({ meta: [{ title: "Evaluate Workflows — KeepSake" }] }),
