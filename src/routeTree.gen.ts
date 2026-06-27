@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorkflowRecorderRouteImport } from './routes/workflow-recorder'
 import { Route as SystemProcessesRouteImport } from './routes/system-processes'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as PolicyCentreRouteImport } from './routes/policy-centre'
 import { Route as KnowledgeDecayRouteImport } from './routes/knowledge-decay'
 import { Route as FallbackGuidesRouteImport } from './routes/fallback-guides'
 import { Route as FailureDrillsRouteImport } from './routes/failure-drills'
@@ -19,6 +20,7 @@ import { Route as DependencyMapRouteImport } from './routes/dependency-map'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as FallbackIdRouteImport } from './routes/fallback.$id'
 import { Route as ApiOpenaiGenerateRouteImport } from './routes/api/openai-generate'
+import { Route as ApiExaScrapeRouteImport } from './routes/api/exa-scrape'
 import { Route as ApiClaudeRouteImport } from './routes/api/claude'
 
 const WorkflowRecorderRoute = WorkflowRecorderRouteImport.update({
@@ -34,6 +36,11 @@ const SystemProcessesRoute = SystemProcessesRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PolicyCentreRoute = PolicyCentreRouteImport.update({
+  id: '/policy-centre',
+  path: '/policy-centre',
   getParentRoute: () => rootRouteImport,
 } as any)
 const KnowledgeDecayRoute = KnowledgeDecayRouteImport.update({
@@ -71,6 +78,11 @@ const ApiOpenaiGenerateRoute = ApiOpenaiGenerateRouteImport.update({
   path: '/api/openai-generate',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiExaScrapeRoute = ApiExaScrapeRouteImport.update({
+  id: '/api/exa-scrape',
+  path: '/api/exa-scrape',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiClaudeRoute = ApiClaudeRouteImport.update({
   id: '/api/claude',
   path: '/api/claude',
@@ -83,10 +95,12 @@ export interface FileRoutesByFullPath {
   '/failure-drills': typeof FailureDrillsRoute
   '/fallback-guides': typeof FallbackGuidesRoute
   '/knowledge-decay': typeof KnowledgeDecayRoute
+  '/policy-centre': typeof PolicyCentreRoute
   '/settings': typeof SettingsRoute
   '/system-processes': typeof SystemProcessesRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
   '/api/claude': typeof ApiClaudeRoute
+  '/api/exa-scrape': typeof ApiExaScrapeRoute
   '/api/openai-generate': typeof ApiOpenaiGenerateRoute
   '/fallback/$id': typeof FallbackIdRoute
 }
@@ -96,10 +110,12 @@ export interface FileRoutesByTo {
   '/failure-drills': typeof FailureDrillsRoute
   '/fallback-guides': typeof FallbackGuidesRoute
   '/knowledge-decay': typeof KnowledgeDecayRoute
+  '/policy-centre': typeof PolicyCentreRoute
   '/settings': typeof SettingsRoute
   '/system-processes': typeof SystemProcessesRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
   '/api/claude': typeof ApiClaudeRoute
+  '/api/exa-scrape': typeof ApiExaScrapeRoute
   '/api/openai-generate': typeof ApiOpenaiGenerateRoute
   '/fallback/$id': typeof FallbackIdRoute
 }
@@ -110,10 +126,12 @@ export interface FileRoutesById {
   '/failure-drills': typeof FailureDrillsRoute
   '/fallback-guides': typeof FallbackGuidesRoute
   '/knowledge-decay': typeof KnowledgeDecayRoute
+  '/policy-centre': typeof PolicyCentreRoute
   '/settings': typeof SettingsRoute
   '/system-processes': typeof SystemProcessesRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
   '/api/claude': typeof ApiClaudeRoute
+  '/api/exa-scrape': typeof ApiExaScrapeRoute
   '/api/openai-generate': typeof ApiOpenaiGenerateRoute
   '/fallback/$id': typeof FallbackIdRoute
 }
@@ -125,10 +143,12 @@ export interface FileRouteTypes {
     | '/failure-drills'
     | '/fallback-guides'
     | '/knowledge-decay'
+    | '/policy-centre'
     | '/settings'
     | '/system-processes'
     | '/workflow-recorder'
     | '/api/claude'
+    | '/api/exa-scrape'
     | '/api/openai-generate'
     | '/fallback/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -138,10 +158,12 @@ export interface FileRouteTypes {
     | '/failure-drills'
     | '/fallback-guides'
     | '/knowledge-decay'
+    | '/policy-centre'
     | '/settings'
     | '/system-processes'
     | '/workflow-recorder'
     | '/api/claude'
+    | '/api/exa-scrape'
     | '/api/openai-generate'
     | '/fallback/$id'
   id:
@@ -151,10 +173,12 @@ export interface FileRouteTypes {
     | '/failure-drills'
     | '/fallback-guides'
     | '/knowledge-decay'
+    | '/policy-centre'
     | '/settings'
     | '/system-processes'
     | '/workflow-recorder'
     | '/api/claude'
+    | '/api/exa-scrape'
     | '/api/openai-generate'
     | '/fallback/$id'
   fileRoutesById: FileRoutesById
@@ -165,10 +189,12 @@ export interface RootRouteChildren {
   FailureDrillsRoute: typeof FailureDrillsRoute
   FallbackGuidesRoute: typeof FallbackGuidesRoute
   KnowledgeDecayRoute: typeof KnowledgeDecayRoute
+  PolicyCentreRoute: typeof PolicyCentreRoute
   SettingsRoute: typeof SettingsRoute
   SystemProcessesRoute: typeof SystemProcessesRoute
   WorkflowRecorderRoute: typeof WorkflowRecorderRoute
   ApiClaudeRoute: typeof ApiClaudeRoute
+  ApiExaScrapeRoute: typeof ApiExaScrapeRoute
   ApiOpenaiGenerateRoute: typeof ApiOpenaiGenerateRoute
   FallbackIdRoute: typeof FallbackIdRoute
 }
@@ -194,6 +220,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/policy-centre': {
+      id: '/policy-centre'
+      path: '/policy-centre'
+      fullPath: '/policy-centre'
+      preLoaderRoute: typeof PolicyCentreRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/knowledge-decay': {
@@ -245,6 +278,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiOpenaiGenerateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/exa-scrape': {
+      id: '/api/exa-scrape'
+      path: '/api/exa-scrape'
+      fullPath: '/api/exa-scrape'
+      preLoaderRoute: typeof ApiExaScrapeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/claude': {
       id: '/api/claude'
       path: '/api/claude'
@@ -261,23 +301,15 @@ const rootRouteChildren: RootRouteChildren = {
   FailureDrillsRoute: FailureDrillsRoute,
   FallbackGuidesRoute: FallbackGuidesRoute,
   KnowledgeDecayRoute: KnowledgeDecayRoute,
+  PolicyCentreRoute: PolicyCentreRoute,
   SettingsRoute: SettingsRoute,
   SystemProcessesRoute: SystemProcessesRoute,
   WorkflowRecorderRoute: WorkflowRecorderRoute,
   ApiClaudeRoute: ApiClaudeRoute,
+  ApiExaScrapeRoute: ApiExaScrapeRoute,
   ApiOpenaiGenerateRoute: ApiOpenaiGenerateRoute,
   FallbackIdRoute: FallbackIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

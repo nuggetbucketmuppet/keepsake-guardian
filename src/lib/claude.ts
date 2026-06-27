@@ -1,4 +1,13 @@
-import type { IntakeResult, NodeFallbackGuide, AnalysisResult, FallbackGuide, DrillScenario, Workflow } from "./types";
+import type {
+  IntakeResult,
+  NodeFallbackGuide,
+  AnalysisResult,
+  FallbackGuide,
+  DrillScenario,
+  Workflow,
+  Policy,
+  ComplianceEvaluation,
+} from "./types";
 
 // ---- Claude proxy (intake parsing, risk analysis) ----
 async function callClaude<T>(kind: string, payload: unknown): Promise<T> {
@@ -81,3 +90,51 @@ export async function suggestScenarios(nodeName: string, nodeType: string, conne
   const parsed = extractJson<{ scenarios?: string[] }>(text);
   return parsed.scenarios ?? [];
 }
+
+// ---- Exa policy scraping ----
+export interface ScrapedPolicy {
+  title: string;
+  url: string;
+  text: string;
+}
+export async function scrapePolicies(query: string, numResults = 5): Promise<ScrapedPolicy[]> {
+  const res = await fetch("/api/exa-scrape", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ query, numResults }),
+  });
+  const data = (await res.json()) as { results?: ScrapedPolicy[]; error?: string };
+  if (!res.ok || data.error) throw new Error(data.error || "Policy search failed. Please try again.");
+  return data.results ?? [];
+}
+
+// ---- OpenAI compliance evaluation ----
+const COMPLIANCE_SYSTEM = `You are an enterprise compliance auditor. You are given a company policy and a workflow. Evaluate how well the workflow complies with the policy. Be specific and reference the policy's actual requirements. Return ONLY valid JSON: {overall_status: one of 'compliant'|'partial'|'non-compliant', compliance_score: integer 0-100, summary: string (2-3 sentences), findings: [{requirement: string, status: 'compliant'|'partial'|'non-compliant', detail: string}], recommendations: string[]}. No markdown, no preamble.`;
+
+export async function evaluateCompliance(
+  policy: Policy,
+  workflow: Workflow,
+): Promise<Omit<ComplianceEvaluation, "id" | "workflowId" | "workflowName" | "policyId" | "policyName" | "evaluatedDate">> {
+  const userMessage = `POLICY: "${policy.name}" (category: ${policy.category})
+---
+${policy.content.slice(0, 8000)}
+---
+WORKFLOW: "${workflow.name}" (department: ${workflow.department}, classification: ${workflow.classification})
+Task: ${workflow.taskDescription}
+AI tool: ${workflow.aiTool}
+Systems touched: ${workflow.systems.map((s) => `${s.systemName} (${s.action}, ${s.dataType})`).join("; ") || "none recorded"}
+Data used: ${workflow.data.map((d) => `${d.source} (${d.type})`).join("; ") || "none recorded"}
+Approvals skipped: ${workflow.approvalsSkipped ? `yes — ${workflow.skippedWhich ?? ""} (${workflow.skippedReason ?? ""})` : "no"}
+Code/pseudocode: ${workflow.code ? workflow.code.slice(0, 2000) : "none provided"}`;
+  const text = await callOpenAI(COMPLIANCE_SYSTEM, userMessage);
+  return extractJson(text);
+}
+
+// ---- OpenAI policy summary ----
+const POLICY_SUMMARY_SYSTEM = `You are a compliance analyst. Summarise the supplied policy document into a concise 2-3 sentence plain-English overview of what it requires. Return ONLY valid JSON: {summary: string}. No markdown, no preamble.`;
+export async function summarisePolicy(content: string): Promise<string> {
+  const text = await callOpenAI(POLICY_SUMMARY_SYSTEM, content.slice(0, 8000));
+  const parsed = extractJson<{ summary?: string }>(text);
+  return parsed.summary ?? "";
+}
+

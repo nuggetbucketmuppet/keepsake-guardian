@@ -1,11 +1,13 @@
 import { useCallback, useSyncExternalStore } from "react";
-import type { Workflow, FallbackGuide, DrillRecord } from "./types";
-import { seedWorkflows, seedGuides, seedDrills } from "./seed";
+import type { Workflow, FallbackGuide, DrillRecord, Policy, ComplianceEvaluation } from "./types";
+import { seedWorkflows, seedGuides, seedDrills, seedPolicies, seedEvaluations } from "./seed";
 
 const KEYS = {
   workflows: "keepsake.workflows",
   guides: "keepsake.guides",
   drills: "keepsake.drills",
+  policies: "keepsake.policies",
+  evaluations: "keepsake.evaluations",
   org: "keepsake.org",
 } as const;
 
@@ -116,6 +118,31 @@ export function saveDrill(d: DrillRecord) {
   const list = read<DrillRecord[]>(KEYS.drills, seedDrills);
   list.unshift(d);
   write(KEYS.drills, list);
+}
+
+// ---- Policies ----
+export function usePolicies(): Policy[] {
+  return useStore<Policy[]>(KEYS.policies, seedPolicies);
+}
+export function savePolicy(p: Policy) {
+  const list = read<Policy[]>(KEYS.policies, seedPolicies);
+  const idx = list.findIndex((x) => x.id === p.id);
+  if (idx >= 0) list[idx] = p;
+  else list.unshift(p);
+  write(KEYS.policies, list);
+}
+export function deletePolicy(id: string) {
+  write(KEYS.policies, read<Policy[]>(KEYS.policies, seedPolicies).filter((p) => p.id !== id));
+}
+
+// ---- Compliance evaluations ----
+export function useEvaluations(): ComplianceEvaluation[] {
+  return useStore<ComplianceEvaluation[]>(KEYS.evaluations, seedEvaluations);
+}
+export function saveEvaluation(e: ComplianceEvaluation) {
+  const list = read<ComplianceEvaluation[]>(KEYS.evaluations, seedEvaluations);
+  list.unshift(e);
+  write(KEYS.evaluations, list);
 }
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
