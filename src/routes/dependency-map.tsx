@@ -69,6 +69,15 @@ function DependencyMapPage() {
 
   const selConn = selected ? connectedNodes(graph, selected.id) : null;
 
+  // Focus a node when arriving from "Go to map" (?focus=<id>).
+  const focusedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (focus && focusedRef.current !== focus) {
+      const node = graph.nodes.find((n) => n.id === focus);
+      if (node) { setSelected(node); focusedRef.current = focus; }
+    }
+  }, [focus, graph.nodes]);
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <PageHeader
