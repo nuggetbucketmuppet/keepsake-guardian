@@ -59,17 +59,6 @@ function SectionHead({ icon, title }: { icon: React.ReactNode; title: string }) 
   return <div className="mb-4 flex items-center gap-2 text-foreground"><span className="text-accent">{icon}</span><h3 className="font-display font-bold">{title}</h3></div>;
 }
 
-function Threshold({ label, value, onChange, color }: { label: string; value: number; onChange: (v: number) => void; color: string }) {
-  return (
-    <div>
-      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide" style={{ color }}>{label}</label>
-      <div className="flex items-center gap-2">
-        <input type="number" min={1} value={value} onChange={(e) => onChange(Number(e.target.value))} className={inputCls} />
-        <span className="text-xs text-muted-foreground">days</span>
-      </div>
-    </div>
-  );
-}
 
 function ToggleRow({ label, desc, checked, onChange }: { label: string; desc: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
