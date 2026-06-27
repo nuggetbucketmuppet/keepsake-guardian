@@ -256,7 +256,7 @@ export function orphanNodes(graph: DependencyGraph): GraphNode[] {
 
 // A compact text description of the graph for AI prompts.
 export function graphSummary(graph: DependencyGraph, onlyNodeIds?: Set<string>): string {
-  const nodes = onlyNodeIds ? graph.nodes.filter((n) => onlyNodeIds.has(n.id)) : graph.nodes;
+  const nodes = (onlyNodeIds ? graph.nodes.filter((n) => onlyNodeIds.has(n.id)) : graph.nodes).filter((n) => !n.archived);
   const idset = new Set(nodes.map((n) => n.id));
   const nameOf = (id: string) => graph.nodes.find((n) => n.id === id)?.name ?? id;
   const nodeLines = nodes
