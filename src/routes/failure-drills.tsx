@@ -225,9 +225,9 @@ function fmtTime(s: number) {
   return `${m}:${sec}`;
 }
 
-function ActiveDrill({ scenario, completed, hints, elapsed, score, onComplete, onHint, onFinish }: {
-  scenario: DrillScenario; completed: string[]; hints: string[]; elapsed: number; score: number;
-  onComplete: (id: string) => void; onHint: (id: string) => void; onFinish: () => void;
+function ActiveDrill({ scenario, mode, completed, hints, evidence, elapsed, score, onComplete, onHint, onEvidence, onFinish }: {
+  scenario: DrillScenario; mode: string; completed: string[]; hints: string[]; evidence: Record<string, string>; elapsed: number; score: number;
+  onComplete: (id: string) => void; onHint: (id: string) => void; onEvidence: (id: string, name: string) => void; onFinish: () => void;
 }) {
   const allDone = scenario.drill_tasks.every((t) => completed.includes(t.task_id));
   return (
