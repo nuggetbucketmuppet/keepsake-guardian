@@ -101,6 +101,7 @@ function RunDrill() {
       const sc = await generateDrill({ agent, affectedWorkflows: affected, outageDuration: duration, mode, team });
       setScenario(sc);
       setCompleted([]);
+      setEvidence({});
       setHints([]);
       setElapsed(0);
       setPhase("active");
