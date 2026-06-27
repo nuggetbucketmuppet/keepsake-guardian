@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
-import { Gauge, Sparkles, ShieldAlert, TrendingUp, AlertTriangle, Lightbulb, Search, ExternalLink, Loader2, CheckCircle2 } from "lucide-react";
+import { Gauge, Sparkles, ShieldAlert, TrendingUp, AlertTriangle, Lightbulb, Search, ExternalLink, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, Card, Button, AiLoading, ErrorCard, EmptyState } from "@/components/ui-kit";
 import { useGraph, graphSummary, updateNode } from "@/lib/graph";
