@@ -48,6 +48,7 @@ function DependencyMapPage() {
 
   const visibleNodes = useMemo(() => {
     return graph.nodes.filter((n) => {
+      if (n.archived) return false;
       if (typeFilter.length && !typeFilter.includes(n.type)) return false;
       if (dept !== "All" && n.department !== dept) return false;
       if (risk !== "All" && n.riskLevel !== risk) return false;
