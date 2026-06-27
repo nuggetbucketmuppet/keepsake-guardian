@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import * as Tabs from "@radix-ui/react-tabs";
 import {
   ShieldAlert, BookOpen, Download, Link2, RefreshCw, ChevronDown, Sparkles, Plus, Check, Trash2, ScrollText,
 } from "lucide-react";
@@ -9,7 +10,6 @@ import { useGraph, connectedNodes, updateNode, NODE_LABELS } from "@/lib/graph";
 import { suggestScenarios, generateNodeGuide } from "@/lib/claude";
 import { putGuide, getAllGuides, deleteGuide } from "@/lib/idb";
 import { uid } from "@/lib/store";
-import { usePolicies } from "@/lib/store";
 import { buildGuidePrintHtml } from "@/lib/guide-print";
 import type { NodeFallbackGuide, GraphNode } from "@/lib/types";
 
@@ -24,11 +24,10 @@ function FallbackGuides() {
   const graph = useGraph();
   const [guides, setGuides] = useState<NodeFallbackGuide[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string>(nodeParam ?? "");
-  const [track, setTrack] = useState<"node" | "policy">("node");
 
   const refresh = () => getAllGuides().then((g) => setGuides(g.sort((a, b) => b.generatedDate.localeCompare(a.generatedDate))));
   useEffect(() => { refresh(); }, []);
-  useEffect(() => { if (nodeParam) { setSelectedNodeId(nodeParam); setTrack("node"); } }, [nodeParam]);
+  useEffect(() => { if (nodeParam) setSelectedNodeId(nodeParam); }, [nodeParam]);
 
   const node = graph.nodes.find((n) => n.id === selectedNodeId);
 
@@ -39,110 +38,40 @@ function FallbackGuides() {
         subtitle="When any node fails, have a human-ready plan. Guides are saved offline so they work even when AI and cloud services are down."
       />
 
-      <div className="mb-6 grid grid-cols-2 gap-2">
-        <button onClick={() => setTrack("node")} className={`flex items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-semibold transition-colors ${track === "node" ? "border-primary bg-primary/10 text-foreground" : "border-border bg-secondary/30 text-muted-foreground"}`}>
-          <ShieldAlert className="h-4 w-4" /> Track 1 — Node Failure
-        </button>
-        <button onClick={() => setTrack("policy")} className={`flex items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-semibold transition-colors ${track === "policy" ? "border-primary bg-primary/10 text-foreground" : "border-border bg-secondary/30 text-muted-foreground"}`}>
-          <ScrollText className="h-4 w-4" /> Track 2 — Policy Compliance
-        </button>
-      </div>
+      <Tabs.Root defaultValue="generate">
+        <Tabs.List className="mb-6 inline-flex gap-1 rounded-md border border-border bg-card p-1">
+          {[{ v: "generate", label: "Generate a Guide" }, { v: "saved", label: `Saved Guides (${guides.length})` }].map((t) => (
+            <Tabs.Trigger key={t.v} value={t.v} className="rounded px-4 py-1.5 text-sm font-semibold text-muted-foreground transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">{t.label}</Tabs.Trigger>
+          ))}
+        </Tabs.List>
 
-      {track === "node" ? (
-        <Card hover={false} className="mb-6 overflow-hidden p-5">
-          <label className="mb-2 block text-sm font-semibold">Generate a Node Failure Guide</label>
-          <select value={selectedNodeId} onChange={(e) => setSelectedNodeId(e.target.value)} className="mb-2 w-full rounded-md border border-input bg-secondary/40 px-3 py-2 text-sm">
-            <option value="">Select a node to prepare for…</option>
-            {graph.nodes.map((n) => <option key={n.id} value={n.id}>{n.name} ({NODE_LABELS[n.type]})</option>)}
-          </select>
-          {node && <Generator key={node.id} node={node} graph={graph} onGenerated={refresh} />}
-        </Card>
-      ) : (
-        <PolicyTrack graph={graph} onGenerated={refresh} />
-      )}
+        <Tabs.Content value="generate">
+          <Card hover={false} className="mb-6 overflow-hidden p-5">
+            <label className="mb-2 block text-sm font-semibold">Generate a Node Failure Guide</label>
+            <select value={selectedNodeId} onChange={(e) => setSelectedNodeId(e.target.value)} className="mb-2 w-full rounded-md border border-input bg-secondary/40 px-3 py-2 text-sm">
+              <option value="">Select a node to prepare for…</option>
+              {graph.nodes.map((n) => <option key={n.id} value={n.id}>{n.name} ({NODE_LABELS[n.type]})</option>)}
+            </select>
+            {node ? <Generator key={node.id} node={node} graph={graph} onGenerated={refresh} /> : (
+              <p className="mt-3 text-sm text-muted-foreground">Pick any platform, service, AI, or staff node above to build a human fallback plan for when it goes offline.</p>
+            )}
+          </Card>
+        </Tabs.Content>
 
-      <h2 className="mb-3 font-display text-lg font-bold">Saved guides ({guides.length})</h2>
-      {guides.length === 0 ? (
-        <EmptyState icon={<BookOpen className="h-6 w-6" />} title="No guides yet" description="Select a node or policy above and generate your first fallback guide." />
-      ) : (
-        <div className="space-y-4">
-          {guides.map((g) => <GuideCard key={g.id} guide={g} onDelete={async () => { await deleteGuide(g.id); refresh(); toast.success("Guide deleted."); }} />)}
-        </div>
-      )}
+        <Tabs.Content value="saved">
+          {guides.length === 0 ? (
+            <EmptyState icon={<BookOpen className="h-6 w-6" />} title="No guides yet" description="Select a node in the Generate tab and create your first fallback guide." />
+          ) : (
+            <div className="space-y-4">
+              {guides.map((g) => <GuideCard key={g.id} guide={g} onDelete={async () => { await deleteGuide(g.id); refresh(); toast.success("Guide deleted."); }} />)}
+            </div>
+          )}
+        </Tabs.Content>
+      </Tabs.Root>
     </div>
   );
 }
 
-function PolicyTrack({ graph, onGenerated }: { graph: ReturnType<typeof useGraph>; onGenerated: () => void }) {
-  const policies = usePolicies();
-  const [policyId, setPolicyId] = useState("");
-  const [nodeId, setNodeId] = useState("");
-  const [generating, setGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const policy = policies.find((p) => p.id === policyId);
-  const node = graph.nodes.find((n) => n.id === nodeId);
-
-  const generate = async () => {
-    if (!policy) { toast.error("Select a policy."); return; }
-    if (!node) { toast.error("Select a node."); return; }
-    setGenerating(true);
-    setError(null);
-    try {
-      const conn = connectedNodes(graph, node.id);
-      const connectedNames = [...conn.upstream, ...conn.downstream].map((n) => n.name);
-      const result = await generateNodeGuide({
-        nodeName: node.name,
-        nodeType: NODE_LABELS[node.type],
-        connectedNodes: connectedNames,
-        scenarios: [
-          `Maintain compliance with "${policy.name}" (${policy.category}) when ${node.name} is operated manually or fails. Policy summary: ${policy.summary || policy.content.slice(0, 800)}`,
-        ],
-      });
-      const guide: NodeFallbackGuide = {
-        ...result, id: uid(), track: "policy", policyName: policy.name, nodeId: node.id, nodeName: node.name,
-        version: 1, generatedDate: new Date().toISOString(),
-      };
-      await putGuide(guide);
-      updateNode(node.id, { hasGuide: true });
-      toast.success("Compliance fallback guide generated and saved offline.");
-      onGenerated();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to generate compliance guide.");
-    } finally {
-      setGenerating(false);
-    }
-  };
-
-  return (
-    <Card hover={false} className="mb-6 overflow-hidden p-5">
-      <label className="mb-2 block text-sm font-semibold">Generate a Policy Compliance Guide</label>
-      <p className="mb-3 text-xs text-muted-foreground">Keep humans compliant with a specific policy when a node is taken over manually.</p>
-      {policies.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No policies yet. Add policies in the Policy Centre first.</p>
-      ) : (
-        <div className="grid gap-2 sm:grid-cols-2">
-          <select value={policyId} onChange={(e) => setPolicyId(e.target.value)} className="w-full rounded-md border border-input bg-secondary/40 px-3 py-2 text-sm">
-            <option value="">Select a policy…</option>
-            {policies.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.category})</option>)}
-          </select>
-          <select value={nodeId} onChange={(e) => setNodeId(e.target.value)} className="w-full rounded-md border border-input bg-secondary/40 px-3 py-2 text-sm">
-            <option value="">Select a node…</option>
-            {graph.nodes.map((n) => <option key={n.id} value={n.id}>{n.name} ({NODE_LABELS[n.type]})</option>)}
-          </select>
-        </div>
-      )}
-      {error && <div className="mt-3"><ErrorCard message={error} onRetry={generate} /></div>}
-      {policies.length > 0 && (
-        <div className="mt-3">
-          {generating ? <AiLoading message="Drafting your compliance fallback guide with GPT-4o…" /> : (
-            <Button className="w-full" onClick={generate}><Sparkles className="h-4 w-4" /> Generate Compliance Guide</Button>
-          )}
-        </div>
-      )}
-    </Card>
-  );
-}
 
 function Generator({ node, graph, onGenerated }: { node: GraphNode; graph: ReturnType<typeof useGraph>; onGenerated: () => void }) {
   const conn = connectedNodes(graph, node.id);
