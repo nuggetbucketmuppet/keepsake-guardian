@@ -9,8 +9,9 @@ export type Department =
   | "Customer Success"
   | "Operations"
   | "Legal"
+  | "Marketing"
   | "Others";
-export type Frequency = "Daily" | "Weekly" | "Monthly" | "Ad-hoc";
+export type Frequency = "Real-time" | "Daily" | "Weekly" | "Monthly" | "Ad-hoc";
 export type Classification = "Public" | "Internal" | "Confidential" | "Restricted";
 
 export interface SystemTouched {
