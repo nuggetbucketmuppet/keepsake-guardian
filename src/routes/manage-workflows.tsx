@@ -44,6 +44,16 @@ function TabButton({ active, onClick, icon, children }: { active: boolean; onCli
   );
 }
 
+function Indicator({ icon, label, value }: { icon: React.ReactNode; label: string; value: number | null }) {
+  const color = value == null ? "text-muted-foreground" : value >= 75 ? "text-accent" : value >= 50 ? "text-amber-400" : "text-danger";
+  return (
+    <div className="flex flex-col items-center" title={label}>
+      <span className={`flex items-center gap-1 text-sm font-bold ${color}`}>{icon}{value == null ? "—" : value}</span>
+      <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</span>
+    </div>
+  );
+}
+
 // ============= Workflows tab =============
 function WorkflowsTab() {
   const navigate = useNavigate();
