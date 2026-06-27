@@ -14,7 +14,6 @@ import { Route as SystemProcessesRouteImport } from './routes/system-processes'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReviewHealthRouteImport } from './routes/review-health'
 import { Route as PolicyCentreRouteImport } from './routes/policy-centre'
-import { Route as KnowledgeDecayRouteImport } from './routes/knowledge-decay'
 import { Route as FallbackGuidesRouteImport } from './routes/fallback-guides'
 import { Route as FailureDrillsRouteImport } from './routes/failure-drills'
 import { Route as DependencyMapRouteImport } from './routes/dependency-map'
@@ -47,11 +46,6 @@ const ReviewHealthRoute = ReviewHealthRouteImport.update({
 const PolicyCentreRoute = PolicyCentreRouteImport.update({
   id: '/policy-centre',
   path: '/policy-centre',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const KnowledgeDecayRoute = KnowledgeDecayRouteImport.update({
-  id: '/knowledge-decay',
-  path: '/knowledge-decay',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FallbackGuidesRoute = FallbackGuidesRouteImport.update({
@@ -100,7 +94,6 @@ export interface FileRoutesByFullPath {
   '/dependency-map': typeof DependencyMapRoute
   '/failure-drills': typeof FailureDrillsRoute
   '/fallback-guides': typeof FallbackGuidesRoute
-  '/knowledge-decay': typeof KnowledgeDecayRoute
   '/policy-centre': typeof PolicyCentreRoute
   '/review-health': typeof ReviewHealthRoute
   '/settings': typeof SettingsRoute
@@ -116,7 +109,6 @@ export interface FileRoutesByTo {
   '/dependency-map': typeof DependencyMapRoute
   '/failure-drills': typeof FailureDrillsRoute
   '/fallback-guides': typeof FallbackGuidesRoute
-  '/knowledge-decay': typeof KnowledgeDecayRoute
   '/policy-centre': typeof PolicyCentreRoute
   '/review-health': typeof ReviewHealthRoute
   '/settings': typeof SettingsRoute
@@ -133,7 +125,6 @@ export interface FileRoutesById {
   '/dependency-map': typeof DependencyMapRoute
   '/failure-drills': typeof FailureDrillsRoute
   '/fallback-guides': typeof FallbackGuidesRoute
-  '/knowledge-decay': typeof KnowledgeDecayRoute
   '/policy-centre': typeof PolicyCentreRoute
   '/review-health': typeof ReviewHealthRoute
   '/settings': typeof SettingsRoute
@@ -151,7 +142,6 @@ export interface FileRouteTypes {
     | '/dependency-map'
     | '/failure-drills'
     | '/fallback-guides'
-    | '/knowledge-decay'
     | '/policy-centre'
     | '/review-health'
     | '/settings'
@@ -167,7 +157,6 @@ export interface FileRouteTypes {
     | '/dependency-map'
     | '/failure-drills'
     | '/fallback-guides'
-    | '/knowledge-decay'
     | '/policy-centre'
     | '/review-health'
     | '/settings'
@@ -183,7 +172,6 @@ export interface FileRouteTypes {
     | '/dependency-map'
     | '/failure-drills'
     | '/fallback-guides'
-    | '/knowledge-decay'
     | '/policy-centre'
     | '/review-health'
     | '/settings'
@@ -200,7 +188,6 @@ export interface RootRouteChildren {
   DependencyMapRoute: typeof DependencyMapRoute
   FailureDrillsRoute: typeof FailureDrillsRoute
   FallbackGuidesRoute: typeof FallbackGuidesRoute
-  KnowledgeDecayRoute: typeof KnowledgeDecayRoute
   PolicyCentreRoute: typeof PolicyCentreRoute
   ReviewHealthRoute: typeof ReviewHealthRoute
   SettingsRoute: typeof SettingsRoute
@@ -247,13 +234,6 @@ declare module '@tanstack/react-router' {
       path: '/policy-centre'
       fullPath: '/policy-centre'
       preLoaderRoute: typeof PolicyCentreRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/knowledge-decay': {
-      id: '/knowledge-decay'
-      path: '/knowledge-decay'
-      fullPath: '/knowledge-decay'
-      preLoaderRoute: typeof KnowledgeDecayRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/fallback-guides': {
@@ -320,7 +300,6 @@ const rootRouteChildren: RootRouteChildren = {
   DependencyMapRoute: DependencyMapRoute,
   FailureDrillsRoute: FailureDrillsRoute,
   FallbackGuidesRoute: FallbackGuidesRoute,
-  KnowledgeDecayRoute: KnowledgeDecayRoute,
   PolicyCentreRoute: PolicyCentreRoute,
   ReviewHealthRoute: ReviewHealthRoute,
   SettingsRoute: SettingsRoute,
