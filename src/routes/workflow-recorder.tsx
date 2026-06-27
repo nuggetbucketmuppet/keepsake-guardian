@@ -292,7 +292,12 @@ function WorkflowUpload() {
 
           {/* Platform tags */}
           <div className="mt-4">
-            <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">Platforms / Services involved — each becomes a node</label>
+            <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
+              <label className="block text-xs font-semibold text-muted-foreground">Platforms / Services involved — each becomes a node</label>
+              <Button variant="outline" className="!py-1 !px-2.5 text-xs" onClick={runDetection} disabled={detecting}>
+                <Sparkles className="h-3.5 w-3.5" /> {detecting ? "Detecting…" : "Auto-detect platforms"}
+              </Button>
+            </div>
             <div className="flex flex-wrap gap-2">
               <select value={tagType} onChange={(e) => setTagType(e.target.value as NodeType)} className="inp w-auto shrink-0">
                 {TAG_TYPES.map((t) => <option key={t} value={t}>{NODE_LABELS[t]}</option>)}
