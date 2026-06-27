@@ -79,10 +79,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "KeepSake — Enterprise AI Resilience Platform" },
+      { title: "Streamline — Enterprise AI Resilience Platform" },
       { name: "description", content: "When AI goes offline, your team stays online. Safeguard institutional knowledge and operational continuity." },
-      { name: "author", content: "KeepSake" },
-      { property: "og:title", content: "KeepSake — Enterprise AI Resilience" },
+      { name: "author", content: "Streamline" },
+      { property: "og:title", content: "Streamline — Enterprise AI Resilience" },
       { property: "og:description", content: "When AI goes offline, your team stays online." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

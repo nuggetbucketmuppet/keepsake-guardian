@@ -20,7 +20,7 @@ export const Route = createFileRoute("/fallback-guides")({
     workflow: typeof s.workflow === "string" ? s.workflow : undefined,
     create: s.create === true || s.create === "true",
   }),
-  head: () => ({ meta: [{ title: "Fallback Guides — KeepSake" }] }),
+  head: () => ({ meta: [{ title: "Fallback Guides — Streamline" }] }),
   component: FallbackGuides,
 });
 

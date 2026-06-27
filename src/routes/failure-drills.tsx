@@ -33,7 +33,7 @@ import { useGraph, NODE_LABELS, NODE_COLORS } from "@/lib/graph";
 import type { DrillRecord, DrillScenario } from "@/lib/types";
 
 export const Route = createFileRoute("/failure-drills")({
-  head: () => ({ meta: [{ title: "Failure Drills — KeepSake" }] }),
+  head: () => ({ meta: [{ title: "Failure Drills — Streamline" }] }),
   validateSearch: (search: Record<string, unknown>): { nodes?: string } => ({
     nodes: typeof search.nodes === "string" ? search.nodes : undefined,
   }),

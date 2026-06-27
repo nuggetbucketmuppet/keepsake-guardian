@@ -23,7 +23,7 @@ import { useGraph, downstreamCount, NODE_LABELS } from "@/lib/graph";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Dashboard — KeepSake" },
+      { title: "Dashboard — Streamline" },
       { name: "description", content: "Operational resilience overview for your organisation's AI workflows." },
     ],
   }),

@@ -195,7 +195,7 @@ function StepWelcome() {
       <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/15 ring-1 ring-primary/40">
         <ShieldCheck className="h-11 w-11 text-primary" />
       </div>
-      <h2 className="font-display text-3xl font-extrabold tracking-tight">Welcome to KeepSake</h2>
+      <h2 className="font-display text-3xl font-extrabold tracking-tight">Welcome to Streamline</h2>
       <p className="mt-3 max-w-md text-base text-accent">When AI goes offline, your team stays online.</p>
       <p className="mt-4 max-w-md text-sm text-muted-foreground">
         Map every tool your business depends on — AI or not. Know exactly what breaks when one
@@ -225,7 +225,7 @@ function StepHowItWorks() {
   ];
   return (
     <div>
-      <h2 className="mb-1 font-display text-2xl font-bold">How KeepSake works</h2>
+      <h2 className="mb-1 font-display text-2xl font-bold">How Streamline works</h2>
       <p className="mb-6 text-sm text-muted-foreground">A simple loop that keeps your operations resilient.</p>
       <div className="grid gap-3 sm:grid-cols-3">
         {tiles.map((t, i) => (
@@ -243,7 +243,7 @@ function StepHowItWorks() {
       </div>
       <div className="mt-5 flex items-start gap-2 rounded-lg border border-accent/30 bg-accent/10 p-3 text-xs text-accent">
         <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />
-        Uploading your automation code or pseudocode is the primary trigger — KeepSake reads it to
+        Uploading your automation code or pseudocode is the primary trigger — Streamline reads it to
         build your dependency map and guides automatically.
       </div>
     </div>

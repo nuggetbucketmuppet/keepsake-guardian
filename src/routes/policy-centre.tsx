@@ -32,7 +32,7 @@ import type { ComplianceStatus, Policy, ComplianceEvaluation } from "@/lib/types
 export const Route = createFileRoute("/policy-centre")({
   head: () => ({
     meta: [
-      { title: "Policy Compliance — KeepSake" },
+      { title: "Policy Compliance — Streamline" },
       {
         name: "description",
         content:

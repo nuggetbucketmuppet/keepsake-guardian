@@ -10,7 +10,7 @@ import { optimiseMap, evaluateDependencyMap, suggestAlternatives } from "@/lib/c
 import type { OptimisationResult, MapEvaluationResult, RiskNode, AlternativeSuggestion } from "@/lib/claude";
 
 export const Route = createFileRoute("/evaluate-workflows")({
-  head: () => ({ meta: [{ title: "Evaluate Workflows — KeepSake" }] }),
+  head: () => ({ meta: [{ title: "Evaluate Workflows — Streamline" }] }),
   component: EvaluateWorkflows,
 });
 
