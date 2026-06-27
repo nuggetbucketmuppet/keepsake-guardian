@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
-  ShieldAlert, BookOpen, Download, Link2, RefreshCw, ChevronDown, Sparkles, Plus, Check, Trash2,
+  ShieldAlert, BookOpen, Download, Link2, RefreshCw, ChevronDown, Sparkles, Plus, Check, Trash2, ScrollText,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, Card, Button, AiLoading, ErrorCard, EmptyState } from "@/components/ui-kit";
@@ -9,6 +9,7 @@ import { useGraph, connectedNodes, updateNode, NODE_LABELS } from "@/lib/graph";
 import { suggestScenarios, generateNodeGuide } from "@/lib/claude";
 import { putGuide, getAllGuides, deleteGuide } from "@/lib/idb";
 import { uid } from "@/lib/store";
+import { usePolicies } from "@/lib/store";
 import { buildGuidePrintHtml } from "@/lib/guide-print";
 import type { NodeFallbackGuide, GraphNode } from "@/lib/types";
 
