@@ -30,16 +30,6 @@ function SettingsPage() {
         </Card>
 
         <Card hover={false} className="p-6">
-          <SectionHead icon={<SlidersHorizontal className="h-4 w-4" />} title="Review Health Thresholds" />
-          <p className="mb-4 text-sm text-muted-foreground">Days since last human execution before each alert level triggers.</p>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Threshold label="Aging (amber)" value={aging} onChange={setAging} color="#f59e0b" />
-            <Threshold label="Warning (red)" value={warning} onChange={setWarning} color="#ef4444" />
-            <Threshold label="Critical (drill)" value={critical} onChange={setCritical} color="#ef4444" />
-          </div>
-        </Card>
-
-        <Card hover={false} className="p-6">
           <SectionHead icon={<Bell className="h-4 w-4" />} title="Notifications" />
           <ToggleRow label="Knowledge decay alerts" desc="Email managers when a workflow enters Warning or Critical." checked={notifyDecay} onChange={setNotifyDecay} />
           <ToggleRow label="Drill reminders" desc="Notify teams when a mandatory drill is due." checked={notifyDrills} onChange={setNotifyDrills} />
