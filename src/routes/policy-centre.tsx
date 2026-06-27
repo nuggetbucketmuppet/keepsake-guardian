@@ -27,7 +27,7 @@ import {
   uid,
 } from "@/lib/store";
 import { scrapePolicies, summarisePolicy, evaluateCompliance } from "@/lib/claude";
-import type { ComplianceStatus, Policy } from "@/lib/types";
+import type { ComplianceStatus, Policy, ComplianceEvaluation } from "@/lib/types";
 
 export const Route = createFileRoute("/policy-centre")({
   head: () => ({
