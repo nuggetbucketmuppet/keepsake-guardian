@@ -19,6 +19,7 @@ import {
 import { OnboardingProvider, useOnboarding } from "@/components/Onboarding";
 import { ACCOUNT, useOrg } from "@/lib/store";
 import logo from "@/assets/keepsake-logo.png";
+import profilePhoto from "@/assets/profile-photo.png.asset.json";
 
 function HowThisWorksButton() {
   const { open } = useOnboarding();
