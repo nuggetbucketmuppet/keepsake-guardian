@@ -259,7 +259,7 @@ function ClientGraph({ graph, visibleNodes, is3d, editMode, onSelect, onSelectEd
   };
 
   return (
-    <div ref={ref} className="h-full w-full">
+    <div ref={ref} className="relative h-full w-full">
       <svg role="img" aria-label="Dependency graph" width="100%" height="100%" viewBox={`0 0 ${dims.w} ${dims.h}`} className="block h-full w-full">
         <defs>
           <filter id="nodeGlow" x="-60%" y="-60%" width="220%" height="220%">
