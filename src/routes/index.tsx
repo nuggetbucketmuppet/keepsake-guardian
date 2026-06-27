@@ -68,7 +68,7 @@ function Dashboard() {
     })),
     ...guides.map((g) => ({
       icon: BookOpen,
-      color: "#00e5be",
+      color: "#3ad17e",
       text: `Fallback guide generated for "${g.workflowName}"`,
       time: g.generatedDate,
     })),
