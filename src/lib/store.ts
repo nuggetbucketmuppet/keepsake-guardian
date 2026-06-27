@@ -1,11 +1,13 @@
 import { useCallback, useSyncExternalStore } from "react";
-import type { Workflow, FallbackGuide, DrillRecord } from "./types";
-import { seedWorkflows, seedGuides, seedDrills } from "./seed";
+import type { Workflow, FallbackGuide, DrillRecord, Policy, ComplianceEvaluation } from "./types";
+import { seedWorkflows, seedGuides, seedDrills, seedPolicies, seedEvaluations } from "./seed";
 
 const KEYS = {
   workflows: "keepsake.workflows",
   guides: "keepsake.guides",
   drills: "keepsake.drills",
+  policies: "keepsake.policies",
+  evaluations: "keepsake.evaluations",
   org: "keepsake.org",
 } as const;
 
