@@ -136,7 +136,7 @@ function AppLayoutInner({ children }: { children: ReactNode }) {
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
-          <span className="font-display font-bold">KeepSake</span>
+          <span className="font-display font-bold">Streamline</span>
           <div className="ml-auto">
             <HowThisWorksButton />
           </div>
