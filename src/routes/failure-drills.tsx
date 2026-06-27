@@ -202,10 +202,11 @@ function RunDrill() {
         <div>
           <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Drill mode</label>
           <div className="flex gap-2">
-            {["Tabletop Exercise", "Live Checklist"].map((m) => (
+            {["Guided", "Unguided"].map((m) => (
               <button key={m} onClick={() => setMode(m)} className={`flex-1 rounded-md border px-3 py-2 text-sm transition-colors ${mode === m ? "border-primary bg-primary/15 text-foreground" : "border-border bg-secondary/40 text-muted-foreground"}`}>{m}</button>
             ))}
           </div>
+          <p className="mt-1 text-[11px] text-muted-foreground">{mode === "Guided" ? "Hints available per task." : "No hints — true readiness assessment."}</p>
         </div>
         <div>
           <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Target team to assess</label>
