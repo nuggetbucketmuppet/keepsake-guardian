@@ -1,14 +1,15 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  Pencil, Trash2, X, Search, Cpu, Server, User, Save, ChevronDown, Workflow as WorkflowIcon, Boxes, Sparkles, ShieldCheck, Zap,
+  Pencil, Trash2, X, Search, Cpu, Server, User, Save, ChevronDown, Workflow as WorkflowIcon, Boxes, Sparkles, ShieldCheck, Zap, BookOpen,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, Card, Button, ScoreBadge, EmptyState } from "@/components/ui-kit";
 import { WorkflowForm } from "@/components/WorkflowForm";
 import { useWorkflows, deleteWorkflow, useEvaluations, useDrills } from "@/lib/store";
 import { useGraph, updateNode, removeNode, orphanNodes, NODE_LABELS } from "@/lib/graph";
-import type { Workflow, GraphNode, NodeType } from "@/lib/types";
+import { getAllGuides } from "@/lib/idb";
+import type { Workflow, GraphNode, NodeType, NodeFallbackGuide } from "@/lib/types";
 
 export const Route = createFileRoute("/manage-workflows")({
   head: () => ({ meta: [{ title: "Manage Workflows — KeepSake" }] }),
@@ -23,7 +24,7 @@ function ManageWorkflows() {
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
       <PageHeader
         title="Manage Workflows"
-        subtitle="Edit or remove existing workflows, and manage every node — platforms, services, and staff — in your dependency map."
+        subtitle="Edit workflows and manage every node in your dependency map."
       />
 
       <div className="mb-6 inline-flex gap-1 rounded-lg border border-border bg-card p-1">
@@ -60,8 +61,11 @@ function WorkflowsTab() {
   const workflows = useWorkflows();
   const evaluations = useEvaluations();
   const drills = useDrills();
+  const graph = useGraph();
   const [editing, setEditing] = useState<Workflow | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Workflow | null>(null);
+  const [guides, setGuides] = useState<NodeFallbackGuide[]>([]);
+  useEffect(() => { getAllGuides().then(setGuides); }, []);
 
   const complianceFor = (wf: Workflow): number | null => {
     const e = evaluations.filter((x) => x.workflowId === wf.id).sort((a, b) => b.evaluatedDate.localeCompare(a.evaluatedDate))[0];
@@ -70,6 +74,11 @@ function WorkflowsTab() {
   const drillFor = (wf: Workflow): number | null => {
     const d = drills.filter((x) => x.team === wf.department).sort((a, b) => b.dateRun.localeCompare(a.dateRun))[0];
     return d ? d.readinessScore : null;
+  };
+  // Does this workflow have at least one fallback guide on any of its nodes?
+  const hasGuideFor = (wf: Workflow): boolean => {
+    const nodeIds = new Set(graph.nodes.filter((n) => (n.workflowIds ?? (n.workflowId ? [n.workflowId] : [])).includes(wf.id)).map((n) => n.id));
+    return guides.some((g) => g.nodeId && nodeIds.has(g.nodeId));
   };
 
   if (workflows.length === 0) {
@@ -106,6 +115,15 @@ function WorkflowsTab() {
               <Indicator icon={<Zap className="h-3.5 w-3.5" />} label="Last drill" value={drillFor(wf)} />
             </div>
             <div className="flex items-center gap-1">
+              {hasGuideFor(wf) ? (
+                <Button variant="outline" className="!py-1.5 text-xs" onClick={() => navigate({ to: "/fallback-guides", search: { workflow: wf.id } })}>
+                  <BookOpen className="h-3.5 w-3.5" /> View guide
+                </Button>
+              ) : (
+                <Button variant="outline" className="!py-1.5 text-xs" onClick={() => navigate({ to: "/fallback-guides", search: { workflow: wf.id, create: true } })}>
+                  <BookOpen className="h-3.5 w-3.5" /> Create guide
+                </Button>
+              )}
               <button aria-label="Edit workflow" onClick={() => setEditing(wf)} className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground">
                 <Pencil className="h-4 w-4" />
               </button>

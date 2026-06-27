@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
-import { Gauge, Sparkles, ShieldAlert, TrendingUp, AlertTriangle, Lightbulb, Search, ExternalLink, CheckCircle2 } from "lucide-react";
+import { Gauge, Sparkles, ShieldAlert, TrendingUp, AlertTriangle, Lightbulb, Search, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, Card, Button, AiLoading, ErrorCard, EmptyState } from "@/components/ui-kit";
 import { useGraph, graphSummary, updateNode } from "@/lib/graph";
@@ -21,7 +21,7 @@ function EvaluateWorkflows() {
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
       <PageHeader
         title="Evaluate Workflows"
-        subtitle="Optimise your dependency map for cost, efficiency, or resilience — and surface the most at-risk single points of failure."
+        subtitle="Optimise your dependency map and surface at-risk single points of failure."
       />
       <Tabs.Root defaultValue="optimise">
         <Tabs.List className="mb-6 inline-flex gap-1 rounded-md border border-border bg-card p-1">
@@ -128,42 +128,41 @@ function EvaluationTab() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<MapEvaluationResult | null>(null);
-  const [applied, setApplied] = useState(false);
 
   const hasNodes = useMemo(() => graph.nodes.some((n) => !n.archived), [graph]);
 
+  // Persist the generated resilience scores across the platform automatically.
+  const applyScores = (res: MapEvaluationResult) => {
+    let nodeHits = 0;
+    for (const rn of res.at_risk_nodes) {
+      const match = graph.nodes.find((g) => g.name.toLowerCase() === rn.node_name.toLowerCase());
+      if (match) { updateNode(match.id, { resilienceScore: rn.resilience_score }); nodeHits++; }
+    }
+    for (const wf of workflows) {
+      const wfNodes = graph.nodes.filter((g) => (g.workflowIds ?? (g.workflowId ? [g.workflowId] : [])).includes(wf.id));
+      const scored = wfNodes
+        .map((g) => res.at_risk_nodes.find((rn) => rn.node_name.toLowerCase() === g.name.toLowerCase())?.resilience_score)
+        .filter((s): s is number => typeof s === "number");
+      const score = scored.length ? Math.round(scored.reduce((a, b) => a + b, 0) / scored.length) : res.overall_resilience_score;
+      updateWorkflow(wf.id, { resilienceScore: score });
+    }
+    return nodeHits;
+  };
+
   const run = async () => {
-    setLoading(true); setError(null); setResult(null); setApplied(false);
+    setLoading(true); setError(null); setResult(null);
     try {
       const res = await evaluateDependencyMap(graphSummary(graph));
       setResult(res);
+      const nodeHits = applyScores(res);
+      toast.success(`Resilience scores updated across the platform (${nodeHits} node${nodeHits === 1 ? "" : "s"} + ${workflows.length} workflow${workflows.length === 1 ? "" : "s"}).`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Evaluation failed.");
     } finally { setLoading(false); }
   };
 
-  // Persist the generated resilience scores across the platform.
-  const applyScores = () => {
-    if (!result) return;
-    let nodeHits = 0;
-    for (const rn of result.at_risk_nodes) {
-      const match = graph.nodes.find((g) => g.name.toLowerCase() === rn.node_name.toLowerCase());
-      if (match) { updateNode(match.id, { resilienceScore: rn.resilience_score }); nodeHits++; }
-    }
-    // Update each workflow's resilience score from the average of its (scored) nodes, else the overall.
-    for (const wf of workflows) {
-      const wfNodes = graph.nodes.filter((g) => (g.workflowIds ?? (g.workflowId ? [g.workflowId] : [])).includes(wf.id));
-      const scored = wfNodes
-        .map((g) => result.at_risk_nodes.find((rn) => rn.node_name.toLowerCase() === g.name.toLowerCase())?.resilience_score)
-        .filter((s): s is number => typeof s === "number");
-      const score = scored.length ? Math.round(scored.reduce((a, b) => a + b, 0) / scored.length) : result.overall_resilience_score;
-      updateWorkflow(wf.id, { resilienceScore: score });
-    }
-    setApplied(true);
-    toast.success(`Resilience scores applied across the platform (${nodeHits} node${nodeHits === 1 ? "" : "s"} + ${workflows.length} workflow${workflows.length === 1 ? "" : "s"}).`);
-  };
-
   const nodes = result ? (riskOnly ? result.at_risk_nodes.filter((n) => n.risk_level !== "low") : result.at_risk_nodes) : [];
+
 
   return (
     <div className="space-y-5">
@@ -188,19 +187,15 @@ function EvaluationTab() {
       {result && (
         <Card hover={false} className="overflow-hidden p-5">
           {showScores && (
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-secondary/30 p-4">
-              <div className="flex items-center gap-3">
-                <span className="flex h-12 w-12 items-center justify-center rounded-full text-lg font-extrabold ring-2" style={{ color: scoreHue(result.overall_resilience_score), borderColor: "transparent", boxShadow: `inset 0 0 0 3px ${scoreHue(result.overall_resilience_score)}55` }}>{result.overall_resilience_score}</span>
-                <div>
-                  <p className="text-sm font-bold">Overall map resilience</p>
-                  <p className="text-xs text-muted-foreground">How well the business copes across all dependencies.</p>
-                </div>
+            <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-border bg-secondary/30 p-4">
+              <span className="flex h-12 w-12 items-center justify-center rounded-full text-lg font-extrabold ring-2" style={{ color: scoreHue(result.overall_resilience_score), borderColor: "transparent", boxShadow: `inset 0 0 0 3px ${scoreHue(result.overall_resilience_score)}55` }}>{result.overall_resilience_score}</span>
+              <div>
+                <p className="text-sm font-bold">Overall map resilience</p>
+                <p className="text-xs text-muted-foreground">Scores applied across the platform automatically.</p>
               </div>
-              <Button variant={applied ? "outline" : "primary"} onClick={applyScores} disabled={applied}>
-                {applied ? <><CheckCircle2 className="h-4 w-4" /> Applied site-wide</> : <><Sparkles className="h-4 w-4" /> Apply scores across platform</>}
-              </Button>
             </div>
           )}
+
           <p className="mb-4 text-sm text-muted-foreground">{result.summary}</p>
           <div className="space-y-3">
             {nodes.map((n, i) => <RiskNodeCard key={i} n={n} showScore={showScores} />)}

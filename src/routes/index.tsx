@@ -16,8 +16,9 @@ import {
 } from "lucide-react";
 import { PulseRing } from "@/components/PulseRing";
 import { Card, PageHeader, StatCard } from "@/components/ui-kit";
-import { DonutGauge, AreaTrend } from "@/components/charts";
-import { useWorkflows, useGuides, useDrills } from "@/lib/store";
+import { DonutGauge } from "@/components/charts";
+import { useWorkflows, useGuides, useDrills, useEvaluations } from "@/lib/store";
+import { useGraph, downstreamCount, NODE_LABELS } from "@/lib/graph";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -38,6 +39,8 @@ function Dashboard() {
   const workflows = useWorkflows();
   const guides = useGuides();
   const drills = useDrills();
+  const evaluations = useEvaluations();
+  const graph = useGraph();
 
   // Date-derived values depend on the current clock, which differs between the
   // server render and the client. Defer them until after mount so SSR and the
@@ -98,16 +101,34 @@ function Dashboard() {
     { to: "/fallback-guides", icon: BookOpen, title: "Fallback Guides", desc: "Human-ready plans for when nodes fail.", glow: "accent" as const },
   ];
 
-  // Telemetry-style metrics for the gauges + trend panel.
+  // Readiness metrics.
   const guideCoverage = workflows.length
-    ? Math.round((new Set(guides.map((g) => g.workflowName)).size / workflows.length) * 100)
+    ? Math.round((new Set(guides.map((g) => g.workflowId)).size / workflows.length) * 100)
     : 0;
-  const drillReadiness = drills.length
-    ? Math.round(drills.reduce((s, d) => s + d.readinessScore, 0) / drills.length)
-    : 0;
-  const resilienceTrend = [...workflows]
-    .sort((a, b) => +new Date(a.lastUpdated) - +new Date(b.lastUpdated))
-    .map((w, i) => ({ label: `WF${i + 1}`, value: w.resilienceScore }));
+  const lastDrillDate = drills.length
+    ? drills.map((d) => +new Date(d.dateRun)).sort((a, b) => b - a)[0]
+    : null;
+  const daysSinceDrill = mounted && lastDrillDate != null
+    ? differenceInDays(new Date(), new Date(lastDrillDate))
+    : null;
+  const policyScore = (() => {
+    const latest = new Map<string, number>();
+    [...evaluations]
+      .sort((a, b) => a.evaluatedDate.localeCompare(b.evaluatedDate))
+      .forEach((e) => latest.set(e.workflowId, e.compliance_score));
+    const vals = [...latest.values()];
+    return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0;
+  })();
+
+  // Critical nodes ranked by number of downstream dependencies (single points of failure).
+  const criticalNodes = graph.nodes
+    .filter((n) => !n.archived)
+    .map((n) => ({ node: n, deps: downstreamCount(graph, n.id) }))
+    .filter((x) => x.deps > 0)
+    .sort((a, b) => b.deps - a.deps)
+    .slice(0, 3);
+  const maxDeps = criticalNodes[0]?.deps ?? 1;
+  const critColor = (i: number) => (i === 0 ? "var(--danger)" : i === 1 ? "#fbbf24" : "var(--accent)");
 
 
   return (
@@ -118,7 +139,7 @@ function Dashboard() {
           <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
             <span suppressHydrationWarning>{mounted ? format(new Date(), "EEEE, d MMMM yyyy") : ""}</span>
             <span className="inline-flex items-center gap-1.5 text-accent">
-              <Radio className="h-3.5 w-3.5" /> Last system sync: 2 minutes ago
+              <Radio className="h-3.5 w-3.5" /> Synced 2 minutes ago
             </span>
           </span>
         }
@@ -127,10 +148,10 @@ function Dashboard() {
       {/* Stat cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          <StatCard key="a" label="Workflows Recorded" value={workflows.length} icon={<ClipboardList className="h-5 w-5" />} />,
+          <StatCard key="a" label="Workflows" value={workflows.length} icon={<ClipboardList className="h-5 w-5" />} />,
           <StatCard
             key="b"
-            label="AI Dependency Risk"
+            label="Dependency Risk"
             value={`${depRisk}%`}
             tone={depRisk > 70 ? "danger" : "default"}
             icon={<ShieldAlert className="h-5 w-5" />}
@@ -138,7 +159,7 @@ function Dashboard() {
           <StatCard key="c" label="Drills Passed (30d)" value={drillsPassedMonth} tone="success" icon={<CheckCircle2 className="h-5 w-5" />} />,
           <StatCard
             key="d"
-            label="Decay Alerts Active"
+            label="Decay Alerts"
             value={decayAlerts}
             tone="warning"
             icon={<AlertTriangle className="h-5 w-5" />}
@@ -162,44 +183,75 @@ function Dashboard() {
         <div className="flex flex-col items-center px-6 py-10">
           <PulseRing score={avgResilience} />
           <p className="mt-6 max-w-md text-center text-sm text-muted-foreground">
-            A live measure of how well your organisation could keep operating if its AI systems went offline right now.
+            How well your organisation keeps running if its AI systems go offline now.
           </p>
         </div>
       </Card>
 
-      {/* Telemetry: live gauges + resilience trend */}
-      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card hover={false} className="lg:col-span-1">
+      {/* Readiness + critical nodes */}
+      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {/* Readiness — inverted-triangle gauge arrangement */}
+        <Card hover={false}>
           <div className="border-b border-border px-5 py-3.5">
             <h2 className="font-display text-sm font-bold uppercase tracking-wide text-muted-foreground">
-              Live Readiness
+              Readiness Signals
             </h2>
           </div>
-          <div className="grid grid-cols-3 gap-2 px-4 py-6">
-            <DonutGauge value={avgResilience} size={96} label="Resilience" />
-            <DonutGauge value={guideCoverage} size={96} label="Guide Cover" color="var(--accent)" />
-            <DonutGauge value={drillReadiness} size={96} label="Drill Ready" color="var(--primary)" />
+          <div className="flex flex-col items-center gap-4 px-4 py-7">
+            <div className="flex flex-wrap items-start justify-center gap-10">
+              <DonutGauge value={guideCoverage} size={104} label="Guide Coverage" color="var(--accent)" />
+              <DonutGauge value={policyScore} size={104} label="Policy Compliance" color="var(--primary)" />
+            </div>
+            <DonutGauge
+              value={daysSinceDrill ?? 0}
+              size={104}
+              label="Days Since Last Drill"
+              unit=""
+              color={daysSinceDrill == null || daysSinceDrill <= 30 ? "var(--accent)" : "var(--danger)"}
+            />
           </div>
         </Card>
 
-        <Card hover={false} className="lg:col-span-2">
+        {/* Critical nodes ranked */}
+        <Card hover={false}>
           <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
             <h2 className="font-display text-sm font-bold uppercase tracking-wide text-muted-foreground">
-              Resilience by Workflow
+              Critical Nodes
             </h2>
-            <span className="font-mono text-[11px] text-muted-foreground">Score 0–100</span>
+            <span className="font-mono text-[11px] text-muted-foreground">Top 3 by downstream deps</span>
           </div>
-          <div className="px-3 py-5">
-            {resilienceTrend.length > 1 ? (
-              <AreaTrend data={resilienceTrend} color="var(--accent)" unit="%" />
-            ) : (
-              <div className="flex h-[240px] items-center justify-center text-sm text-muted-foreground">
-                Record more workflows to see the resilience trend.
+          <div className="space-y-4 px-5 py-6">
+            {criticalNodes.length === 0 ? (
+              <div className="flex h-[180px] items-center justify-center text-sm text-muted-foreground">
+                Map workflows to surface single points of failure.
               </div>
+            ) : (
+              criticalNodes.map((c, i) => (
+                <Link key={c.node.id} to="/dependency-map" className="block">
+                  <div className="mb-1.5 flex items-center justify-between gap-2 text-sm">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className="font-mono text-xs text-muted-foreground">#{i + 1}</span>
+                      <span className="truncate font-semibold">{c.node.name}</span>
+                      <span className="shrink-0 text-[10px] uppercase tracking-wide text-muted-foreground">{NODE_LABELS[c.node.type]}</span>
+                    </span>
+                    <span className="shrink-0 font-bold" style={{ color: critColor(i) }}>{c.deps} deps</span>
+                  </div>
+                  <div className="h-2.5 w-full overflow-hidden rounded-sm bg-secondary">
+                    <motion.div
+                      className="h-full rounded-sm"
+                      style={{ backgroundColor: critColor(i) }}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(c.deps / maxDeps) * 100}%` }}
+                      transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: i * 0.1 }}
+                    />
+                  </div>
+                </Link>
+              ))
             )}
           </div>
         </Card>
       </div>
+
 
 
 
