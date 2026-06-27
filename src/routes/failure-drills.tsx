@@ -52,7 +52,7 @@ function gradeFor(pct: number): string {
 function FailureDrills() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-      <PageHeader title="AI Failure Drill Simulator" subtitle="Test whether your team can keep operations running when AI goes offline." />
+      <PageHeader title="Failure Drill Simulator" subtitle="Test whether your team can keep operations running when any tool, service, AI, or staff member goes offline." />
       <Tabs.Root defaultValue="run">
         <Tabs.List className="mb-6 inline-flex gap-1 rounded-md border border-border bg-card p-1">
           {[{ v: "run", label: "Run a Drill" }, { v: "history", label: "Drill History" }].map((t) => (
