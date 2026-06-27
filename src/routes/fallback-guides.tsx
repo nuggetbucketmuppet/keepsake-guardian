@@ -1,8 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
 import {
   BookOpen, Sparkles, Check, Search, X,
+  ShieldAlert, Download, Link2, ChevronDown, Trash2, ScrollText,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, Card, Button, AiLoading, ErrorCard, EmptyState } from "@/components/ui-kit";
@@ -10,6 +11,7 @@ import { useGraph, connectedNodes, updateNode, NODE_LABELS } from "@/lib/graph";
 import { useWorkflows, uid } from "@/lib/store";
 import { suggestScenarios, generateNodeGuide } from "@/lib/claude";
 import { putGuide, getAllGuides, deleteGuide } from "@/lib/idb";
+import { buildGuidePrintHtml } from "@/lib/guide-print";
 import type { NodeFallbackGuide, DependencyGraph, GraphNode } from "@/lib/types";
 
 export const Route = createFileRoute("/fallback-guides")({
