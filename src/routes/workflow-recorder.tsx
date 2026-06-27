@@ -323,7 +323,29 @@ function WorkflowUpload() {
               </div>
             )}
           </div>
+
+          {questions.length > 0 && (
+            <div className="mt-4 rounded-lg border border-primary/30 bg-primary/5 p-4">
+              <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                <Info className="h-4 w-4 text-primary" /> Clarifying questions — answers refine your map
+              </div>
+              <div className="space-y-3">
+                {questions.map((q, i) => (
+                  <div key={i}>
+                    <label className="mb-1 block text-xs text-muted-foreground">{q}</label>
+                    <input
+                      value={answers[i] ?? ""}
+                      onChange={(e) => setAnswers((a) => ({ ...a, [i]: e.target.value }))}
+                      placeholder="Your answer (optional)"
+                      className="inp"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </Card>
+
 
         {error && <ErrorCard message={error} onRetry={submit} />}
         {loading ? (
