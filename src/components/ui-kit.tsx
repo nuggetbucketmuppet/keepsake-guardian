@@ -130,11 +130,12 @@ export function SeverityBadge({ severity }: { severity: Severity }) {
   );
 }
 
-export function ScoreBadge({ score }: { score: number }) {
+export function ScoreBadge({ score, title }: { score: number; title?: string }) {
   const color = scoreColor(score);
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold ring-1"
+      title={title ?? `Resilience score: ${score}/100 — ${scoreLabel(score)}. How well this workflow survives an outage of its dependencies.`}
+      className="inline-flex cursor-help items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold ring-1"
       style={{ color, backgroundColor: `${color}26`, boxShadow: `inset 0 0 0 1px ${color}66` }}
     >
       <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />
