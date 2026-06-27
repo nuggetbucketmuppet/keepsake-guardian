@@ -42,7 +42,7 @@ function WorkflowUpload() {
   const [aiPowered, setAiPowered] = useState<"Yes" | "Partially" | "No">("Partially");
   const [tags, setTags] = useState<Tag[]>([]);
   const [tagInput, setTagInput] = useState("");
-  const [tagType, setTagType] = useState<NodeType>("saas");
+  const [tagType, setTagType] = useState<NodeType>("platform");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
