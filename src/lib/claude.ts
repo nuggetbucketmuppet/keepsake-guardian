@@ -37,6 +37,28 @@ export function parseIntake(payload: unknown) {
   return callClaude<IntakeResult>("intake", payload);
 }
 
+// ---- File parsing (PDF / image / JSON / text) into workflow text ----
+export function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ""));
+    reader.onerror = () => reject(new Error("Could not read file."));
+    reader.readAsDataURL(file);
+  });
+}
+
+export async function parseFile(file: File): Promise<string> {
+  const dataUrl = await readFileAsDataUrl(file);
+  const res = await fetch("/api/parse-file", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ dataUrl, mime: file.type || "", filename: file.name }),
+  });
+  const data = (await res.json()) as { text?: string; error?: string };
+  if (!res.ok || data.error) throw new Error(data.error || "Could not parse file.");
+  return data.text ?? "";
+}
+
 // ---- OpenAI proxy (guide generation, scenarios) ----
 function extractJson<T>(text: string): T {
   let t = text.trim();

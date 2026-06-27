@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import {
   Home,
   Activity,
+  ListChecks,
   BookOpen,
   GitFork,
   Zap,
@@ -32,6 +33,7 @@ function HowThisWorksButton() {
 const NAV = [
   { to: "/", label: "Dashboard", icon: Home },
   { to: "/workflow-recorder", label: "Upload a Workflow", icon: Activity },
+  { to: "/manage-workflows", label: "Manage Workflows", icon: ListChecks },
   { to: "/fallback-guides", label: "Fallback Guides", icon: BookOpen },
   { to: "/dependency-map", label: "Dependency Map", icon: GitFork },
   { to: "/failure-drills", label: "Failure Drills", icon: Zap },

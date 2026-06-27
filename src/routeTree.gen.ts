@@ -12,11 +12,13 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorkflowRecorderRouteImport } from './routes/workflow-recorder'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as PolicyCentreRouteImport } from './routes/policy-centre'
+import { Route as ManageWorkflowsRouteImport } from './routes/manage-workflows'
 import { Route as FallbackGuidesRouteImport } from './routes/fallback-guides'
 import { Route as FailureDrillsRouteImport } from './routes/failure-drills'
 import { Route as DependencyMapRouteImport } from './routes/dependency-map'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as FallbackIdRouteImport } from './routes/fallback.$id'
+import { Route as ApiParseFileRouteImport } from './routes/api/parse-file'
 import { Route as ApiOpenaiGenerateRouteImport } from './routes/api/openai-generate'
 import { Route as ApiExaScrapeRouteImport } from './routes/api/exa-scrape'
 import { Route as ApiClaudeRouteImport } from './routes/api/claude'
@@ -34,6 +36,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const PolicyCentreRoute = PolicyCentreRouteImport.update({
   id: '/policy-centre',
   path: '/policy-centre',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManageWorkflowsRoute = ManageWorkflowsRouteImport.update({
+  id: '/manage-workflows',
+  path: '/manage-workflows',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FallbackGuidesRoute = FallbackGuidesRouteImport.update({
@@ -61,6 +68,11 @@ const FallbackIdRoute = FallbackIdRouteImport.update({
   path: '/fallback/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiParseFileRoute = ApiParseFileRouteImport.update({
+  id: '/api/parse-file',
+  path: '/api/parse-file',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiOpenaiGenerateRoute = ApiOpenaiGenerateRouteImport.update({
   id: '/api/openai-generate',
   path: '/api/openai-generate',
@@ -82,12 +94,14 @@ export interface FileRoutesByFullPath {
   '/dependency-map': typeof DependencyMapRoute
   '/failure-drills': typeof FailureDrillsRoute
   '/fallback-guides': typeof FallbackGuidesRoute
+  '/manage-workflows': typeof ManageWorkflowsRoute
   '/policy-centre': typeof PolicyCentreRoute
   '/settings': typeof SettingsRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
   '/api/claude': typeof ApiClaudeRoute
   '/api/exa-scrape': typeof ApiExaScrapeRoute
   '/api/openai-generate': typeof ApiOpenaiGenerateRoute
+  '/api/parse-file': typeof ApiParseFileRoute
   '/fallback/$id': typeof FallbackIdRoute
 }
 export interface FileRoutesByTo {
@@ -95,12 +109,14 @@ export interface FileRoutesByTo {
   '/dependency-map': typeof DependencyMapRoute
   '/failure-drills': typeof FailureDrillsRoute
   '/fallback-guides': typeof FallbackGuidesRoute
+  '/manage-workflows': typeof ManageWorkflowsRoute
   '/policy-centre': typeof PolicyCentreRoute
   '/settings': typeof SettingsRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
   '/api/claude': typeof ApiClaudeRoute
   '/api/exa-scrape': typeof ApiExaScrapeRoute
   '/api/openai-generate': typeof ApiOpenaiGenerateRoute
+  '/api/parse-file': typeof ApiParseFileRoute
   '/fallback/$id': typeof FallbackIdRoute
 }
 export interface FileRoutesById {
@@ -109,12 +125,14 @@ export interface FileRoutesById {
   '/dependency-map': typeof DependencyMapRoute
   '/failure-drills': typeof FailureDrillsRoute
   '/fallback-guides': typeof FallbackGuidesRoute
+  '/manage-workflows': typeof ManageWorkflowsRoute
   '/policy-centre': typeof PolicyCentreRoute
   '/settings': typeof SettingsRoute
   '/workflow-recorder': typeof WorkflowRecorderRoute
   '/api/claude': typeof ApiClaudeRoute
   '/api/exa-scrape': typeof ApiExaScrapeRoute
   '/api/openai-generate': typeof ApiOpenaiGenerateRoute
+  '/api/parse-file': typeof ApiParseFileRoute
   '/fallback/$id': typeof FallbackIdRoute
 }
 export interface FileRouteTypes {
@@ -124,12 +142,14 @@ export interface FileRouteTypes {
     | '/dependency-map'
     | '/failure-drills'
     | '/fallback-guides'
+    | '/manage-workflows'
     | '/policy-centre'
     | '/settings'
     | '/workflow-recorder'
     | '/api/claude'
     | '/api/exa-scrape'
     | '/api/openai-generate'
+    | '/api/parse-file'
     | '/fallback/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -137,12 +157,14 @@ export interface FileRouteTypes {
     | '/dependency-map'
     | '/failure-drills'
     | '/fallback-guides'
+    | '/manage-workflows'
     | '/policy-centre'
     | '/settings'
     | '/workflow-recorder'
     | '/api/claude'
     | '/api/exa-scrape'
     | '/api/openai-generate'
+    | '/api/parse-file'
     | '/fallback/$id'
   id:
     | '__root__'
@@ -150,12 +172,14 @@ export interface FileRouteTypes {
     | '/dependency-map'
     | '/failure-drills'
     | '/fallback-guides'
+    | '/manage-workflows'
     | '/policy-centre'
     | '/settings'
     | '/workflow-recorder'
     | '/api/claude'
     | '/api/exa-scrape'
     | '/api/openai-generate'
+    | '/api/parse-file'
     | '/fallback/$id'
   fileRoutesById: FileRoutesById
 }
@@ -164,12 +188,14 @@ export interface RootRouteChildren {
   DependencyMapRoute: typeof DependencyMapRoute
   FailureDrillsRoute: typeof FailureDrillsRoute
   FallbackGuidesRoute: typeof FallbackGuidesRoute
+  ManageWorkflowsRoute: typeof ManageWorkflowsRoute
   PolicyCentreRoute: typeof PolicyCentreRoute
   SettingsRoute: typeof SettingsRoute
   WorkflowRecorderRoute: typeof WorkflowRecorderRoute
   ApiClaudeRoute: typeof ApiClaudeRoute
   ApiExaScrapeRoute: typeof ApiExaScrapeRoute
   ApiOpenaiGenerateRoute: typeof ApiOpenaiGenerateRoute
+  ApiParseFileRoute: typeof ApiParseFileRoute
   FallbackIdRoute: typeof FallbackIdRoute
 }
 
@@ -194,6 +220,13 @@ declare module '@tanstack/react-router' {
       path: '/policy-centre'
       fullPath: '/policy-centre'
       preLoaderRoute: typeof PolicyCentreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/manage-workflows': {
+      id: '/manage-workflows'
+      path: '/manage-workflows'
+      fullPath: '/manage-workflows'
+      preLoaderRoute: typeof ManageWorkflowsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/fallback-guides': {
@@ -231,6 +264,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FallbackIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/parse-file': {
+      id: '/api/parse-file'
+      path: '/api/parse-file'
+      fullPath: '/api/parse-file'
+      preLoaderRoute: typeof ApiParseFileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/openai-generate': {
       id: '/api/openai-generate'
       path: '/api/openai-generate'
@@ -260,24 +300,16 @@ const rootRouteChildren: RootRouteChildren = {
   DependencyMapRoute: DependencyMapRoute,
   FailureDrillsRoute: FailureDrillsRoute,
   FallbackGuidesRoute: FallbackGuidesRoute,
+  ManageWorkflowsRoute: ManageWorkflowsRoute,
   PolicyCentreRoute: PolicyCentreRoute,
   SettingsRoute: SettingsRoute,
   WorkflowRecorderRoute: WorkflowRecorderRoute,
   ApiClaudeRoute: ApiClaudeRoute,
   ApiExaScrapeRoute: ApiExaScrapeRoute,
   ApiOpenaiGenerateRoute: ApiOpenaiGenerateRoute,
+  ApiParseFileRoute: ApiParseFileRoute,
   FallbackIdRoute: FallbackIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
