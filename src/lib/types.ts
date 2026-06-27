@@ -143,6 +143,7 @@ export interface GraphNode {
   type: NodeType;
   department?: Department;
   riskLevel: RiskLevel;
+  resilienceScore?: number; // 0-100, set by the Evaluate Workflows report
   hasGuide?: boolean;
   reviewedAt?: string; // ISO date a manager last marked it updated
   workflowId?: string; // source workflow if generated from an upload

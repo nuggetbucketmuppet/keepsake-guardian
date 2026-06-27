@@ -161,14 +161,15 @@ function NodesTab() {
   const [filter, setFilter] = useState<"all" | NodeType>("all");
   const [editing, setEditing] = useState<GraphNode | null>(null);
   const [showTidy, setShowTidy] = useState(false);
-  const [showArchived, setShowArchived] = useState(false);
+  const [archiveView, setArchiveView] = useState<"active" | "archived" | "all">("active");
 
   const orphans = useMemo(() => orphanNodes(graph).filter((n) => !n.archived), [graph]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return graph.nodes.filter((n) => {
-      if (!showArchived && n.archived) return false;
+      if (archiveView === "active" && n.archived) return false;
+      if (archiveView === "archived" && !n.archived) return false;
       if (filter !== "all" && n.type !== filter) return false;
       if (!q) return true;
       return (
@@ -178,7 +179,8 @@ function NodesTab() {
         (n.tags ?? []).some((t) => t.toLowerCase().includes(q))
       );
     });
-  }, [graph.nodes, query, filter, showArchived]);
+  }, [graph.nodes, query, filter, archiveView]);
+
 
 
   return (
@@ -207,12 +209,15 @@ function NodesTab() {
         <Button variant="outline" onClick={() => setShowTidy(true)}>
           <Sparkles className="h-4 w-4" /> Tidy nodes{orphans.length ? ` (${orphans.length})` : ""}
         </Button>
-        <button
-          onClick={() => setShowArchived((v) => !v)}
-          className={`shrink-0 rounded-md border px-3 py-1.5 text-xs font-semibold ${showArchived ? "border-primary bg-primary/10 text-foreground" : "border-border text-muted-foreground hover:text-foreground"}`}
+        <select
+          value={archiveView}
+          onChange={(e) => setArchiveView(e.target.value as "active" | "archived" | "all")}
+          className="shrink-0 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         >
-          {showArchived ? "Hide archived" : "Show archived"}
-        </button>
+          <option value="active">Active only</option>
+          <option value="archived">Archived only</option>
+          <option value="all">All (incl. archived)</option>
+        </select>
       </div>
 
 
@@ -227,13 +232,21 @@ function NodesTab() {
                 {n.icon ? <span className="text-lg leading-none">{n.icon}</span> : TYPE_ICON[n.type]}
               </span>
               <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-semibold">{n.name}</div>
+                <div className="flex items-center gap-2">
+                  <span className="truncate text-sm font-semibold">{n.name}</span>
+                  {n.archived && <span className="shrink-0 rounded bg-secondary px-1.5 py-0.5 text-[10px] font-bold uppercase text-muted-foreground">Archived</span>}
+                </div>
                 <div className="truncate text-xs text-muted-foreground">
                   {NODE_LABELS[n.type]}
                   {n.contactEmail ? ` · ${n.contactEmail}` : ""}
                   {n.contactPhone ? ` · ${n.contactPhone}` : ""}
                 </div>
               </div>
+              {n.archived && (
+                <button aria-label="Restore node" onClick={() => { updateNode(n.id, { archived: false }); toast.success(`Restored "${n.name}".`); }} className="rounded-md px-2 py-1 text-xs font-semibold text-accent hover:bg-secondary">
+                  Restore
+                </button>
+              )}
               <button aria-label="Edit node" onClick={() => setEditing(n)} className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground">
                 <Pencil className="h-4 w-4" />
               </button>

@@ -275,22 +275,113 @@ export interface RiskNode {
   node_name: string;
   type: string;
   dependency_score: number; // 0-100
+  resilience_score: number; // 0-100, how well the system copes if this node fails
   risk_level: "high" | "medium" | "low";
   reason: string;
   recommendation: string;
 }
 export interface MapEvaluationResult {
   summary: string;
+  overall_resilience_score: number; // 0-100 across the whole map
   at_risk_nodes: RiskNode[];
 }
 const MAP_EVAL_SYSTEM = `You are a business resilience analyst. Given a dependency graph (nodes and edges), identify the most highly-depended-on and at-risk nodes — single points of failure where an outage would cripple operations.
-For each, give a dependency_score (0-100), a risk_level ("high"|"medium"|"low"), why it's risky, and a recommendation.
+For each, give a dependency_score (0-100, higher = more relied upon), a resilience_score (0-100, higher = the business copes better if this node fails), a risk_level ("high"|"medium"|"low"), why it's risky, and a recommendation.
+Also give an overall_resilience_score (0-100) for the whole map.
 Order by dependency_score descending.
-Return ONLY valid JSON: {summary: string, at_risk_nodes: [{node_name, type, dependency_score, risk_level, reason, recommendation}]}. No markdown, no preamble.`;
+Return ONLY valid JSON: {summary: string, overall_resilience_score: integer, at_risk_nodes: [{node_name, type, dependency_score, resilience_score, risk_level, reason, recommendation}]}. No markdown, no preamble.`;
 
 export async function evaluateDependencyMap(graphSummary: string): Promise<MapEvaluationResult> {
   const text = await callOpenAI(MAP_EVAL_SYSTEM, graphSummary);
   const parsed = extractJson<Partial<MapEvaluationResult>>(text);
-  return { summary: parsed.summary ?? "", at_risk_nodes: parsed.at_risk_nodes ?? [] };
+  return {
+    summary: parsed.summary ?? "",
+    overall_resilience_score: parsed.overall_resilience_score ?? 0,
+    at_risk_nodes: (parsed.at_risk_nodes ?? []).map((n) => ({
+      ...n,
+      resilience_score: n.resilience_score ?? Math.max(0, 100 - (n.dependency_score ?? 0)),
+    })),
+  };
 }
+
+// ---- Alternatives + resilience suggestions for an at-risk node ----
+export interface AlternativeSuggestion {
+  key_criteria: string[];
+  resilience_suggestions: string[];
+  search_query: string;
+  alternatives: ScrapedPolicy[]; // web results from Exa { title, url, text }
+}
+const SUGGEST_SYSTEM = `You are an enterprise resilience and procurement advisor. Given an at-risk dependency node (a tool, service, or role) and why it is risky, produce:
+1. key_criteria: 4-6 concrete criteria to look for when evaluating an alternative or backup for this node.
+2. resilience_suggestions: 3-5 specific actions to make the workflow more resilient to this node failing (redundancy, fallback, contracts, cross-training, etc.).
+3. search_query: a concise web search query to find alternative tools/vendors/services for this node.
+Return ONLY valid JSON: {key_criteria: string[], resilience_suggestions: string[], search_query: string}. No markdown, no preamble.`;
+
+export async function suggestAlternatives(input: {
+  nodeName: string;
+  nodeType: string;
+  reason: string;
+}): Promise<AlternativeSuggestion> {
+  const userMessage = `AT-RISK NODE: "${input.nodeName}" (type: ${input.nodeType}).\nWHY IT IS RISKY: ${input.reason}`;
+  const text = await callOpenAI(SUGGEST_SYSTEM, userMessage);
+  const parsed = extractJson<{ key_criteria?: string[]; resilience_suggestions?: string[]; search_query?: string }>(text);
+  const query = parsed.search_query || `alternatives to ${input.nodeName}`;
+  let alternatives: ScrapedPolicy[] = [];
+  try {
+    alternatives = await scrapePolicies(query, 5);
+  } catch {
+    alternatives = [];
+  }
+  return {
+    key_criteria: parsed.key_criteria ?? [],
+    resilience_suggestions: parsed.resilience_suggestions ?? [],
+    search_query: query,
+    alternatives,
+  };
+}
+
+// ---- Conversational workflow intake chatbot ----
+export interface ChatMessage { role: "user" | "assistant"; content: string }
+const CHAT_SYSTEM = `You are KeepSake's workflow intake assistant. Your job is to help an operations manager fully describe a business workflow so it can be mapped into a dependency graph.
+Rules:
+- Ask only the MOST pertinent clarifying questions — one or two at a time, concise and plain-English.
+- Focus on: tools/platforms/AI used, who performs manual steps (positions), what data moves, triggers, decisions, and what happens if a step fails.
+- Do NOT ask more than necessary. When you have enough to describe the workflow end-to-end, reply with exactly "READY" on its own line followed by a one-sentence note that you can now generate the workflow.
+- Never invent details the user didn't give.
+Reply as a normal chat assistant turn (plain text, no JSON).`;
+
+export async function chatWorkflow(messages: ChatMessage[]): Promise<string> {
+  const transcript = messages.map((m) => `${m.role === "user" ? "MANAGER" : "ASSISTANT"}: ${m.content}`).join("\n");
+  return callOpenAI(CHAT_SYSTEM, transcript);
+}
+
+// ---- Synthesise the chat into a workflow description + autofill metadata ----
+export interface SynthesisResult extends AutofillResult {
+  description: string;
+}
+const SYNTH_SYSTEM = `You are a business operations analyst. From the chat transcript between a manager and an intake assistant, produce a single, complete plain-English workflow description that names every tool, platform, AI system, person/position, and step, plus inferred metadata.
+- description: a thorough paragraph describing the full workflow end-to-end.
+- department: one of Finance, Procurement, HR, IT, Customer Success, Operations, Legal, Marketing, Others.
+- frequency: one of Real-time, Daily, Weekly, Monthly, Ad-hoc.
+- classification: one of Public, Internal, Confidential, Restricted.
+- aiPowered: "Yes", "Partially", or "No".
+- name: a short descriptive workflow name.
+- platforms: every distinct tool/service/AI/human role, each typed "ai", "platform", or "human".
+Return ONLY valid JSON: {description, name, department, frequency, classification, aiPowered, platforms: [{name, type}]}. No markdown, no preamble.`;
+
+export async function synthesiseWorkflow(messages: ChatMessage[]): Promise<SynthesisResult> {
+  const transcript = messages.map((m) => `${m.role === "user" ? "MANAGER" : "ASSISTANT"}: ${m.content}`).join("\n");
+  const text = await callOpenAI(SYNTH_SYSTEM, transcript);
+  const parsed = extractJson<Partial<SynthesisResult>>(text);
+  return {
+    description: parsed.description ?? "",
+    name: parsed.name ?? "",
+    department: parsed.department ?? "Operations",
+    frequency: parsed.frequency ?? "Daily",
+    classification: parsed.classification ?? "Internal",
+    aiPowered: parsed.aiPowered ?? "Partially",
+    platforms: parsed.platforms ?? [],
+  };
+}
+
 
