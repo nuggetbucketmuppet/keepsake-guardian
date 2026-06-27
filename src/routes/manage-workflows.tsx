@@ -266,6 +266,9 @@ function NodesTab() {
                   Restore
                 </button>
               )}
+              <button aria-label="Go to node on dependency map" title="Go to map" onClick={() => navigate({ to: "/dependency-map", search: { focus: n.id } })} className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-accent">
+                <GitFork className="h-4 w-4" />
+              </button>
               <button aria-label="Edit node" onClick={() => setEditing(n)} className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground">
                 <Pencil className="h-4 w-4" />
               </button>
