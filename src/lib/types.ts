@@ -148,6 +148,7 @@ export interface GraphNode {
   workflowId?: string; // source workflow if generated from an upload
   workflowIds?: string[]; // every workflow that references this node (shared nodes)
   tags?: string[]; // customisation tags
+  archived?: boolean; // hidden from the live map after tidy-up
   icon?: string; // emoji or short label shown on the node
   // Optional contact details for human (position) nodes — filled via the node popup
   contactName?: string;
