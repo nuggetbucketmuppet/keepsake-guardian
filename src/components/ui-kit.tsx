@@ -4,6 +4,8 @@ import "react-circular-progressbar/dist/styles.css";
 import { motion } from "framer-motion";
 import { AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
 import type { Severity } from "@/lib/types";
+import { CountUp } from "./CountUp";
+
 
 export function scoreColor(score: number): string {
   if (score >= 80) return "#22c55e";
