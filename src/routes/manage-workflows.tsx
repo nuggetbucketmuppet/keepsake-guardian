@@ -204,7 +204,17 @@ function NodesTab() {
             </button>
           ))}
         </div>
+        <Button variant="outline" onClick={() => setShowTidy(true)}>
+          <Sparkles className="h-4 w-4" /> Tidy nodes{orphans.length ? ` (${orphans.length})` : ""}
+        </Button>
+        <button
+          onClick={() => setShowArchived((v) => !v)}
+          className={`shrink-0 rounded-md border px-3 py-1.5 text-xs font-semibold ${showArchived ? "border-primary bg-primary/10 text-foreground" : "border-border text-muted-foreground hover:text-foreground"}`}
+        >
+          {showArchived ? "Hide archived" : "Show archived"}
+        </button>
       </div>
+
 
       {filtered.length === 0 ? (
         <EmptyState icon={<Search className="h-7 w-7" />} title="No matching nodes" description="Try a different search or filter." />
